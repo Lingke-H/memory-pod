@@ -51,8 +51,8 @@ use it. Self-contained (throwaway profile, no setup, works offline):
 make demo-learn
 ```
 
-Expected: the furnished prompt for `"help me write my professional bio"` now
-contains the marine-biologist fact that was remembered one step earlier.
+Expected: the furnished prompt for `"help me write a marathon training plan"`
+now contains the marathon-training fact that was remembered one step earlier.
 
 CLI variant (any profile):
 
