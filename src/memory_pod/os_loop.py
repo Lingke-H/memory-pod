@@ -1,9 +1,8 @@
 """OS-level hotkey loop for Memory Pod.
 
-This module intentionally knows almost nothing about the memory engine. It owns
-only the global hotkey, clipboard handoff, and keyboard macro. The memory layer
-must stay behind the augment_memory() function until the real augment() contract
-is wired in.
+This Tier 2 module intentionally knows almost nothing about the memory engine.
+It owns only the global hotkey, clipboard handoff, and keyboard macro. The
+memory layer stays behind the augment() contract.
 """
 
 from __future__ import annotations
@@ -29,7 +28,7 @@ class HotkeyConfig:
     cut_wait_s: float = 0.18
     paste_wait_s: float = 0.12
     clipboard_timeout_s: float = 1.25
-    submit_after_paste: bool = True
+    submit_after_paste: bool = False
     restore_clipboard_after_s: float | None = None
 
 

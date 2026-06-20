@@ -8,6 +8,7 @@ from pathlib import Path
 from memory_pod.augment import augment_for_profile
 from memory_pod.config import DEFAULT_PROFILE, PROFILES_DIR
 from memory_pod.ingest import ingest_path
+from memory_pod.memory_store import store_path
 
 
 def main() -> None:
@@ -29,6 +30,7 @@ def main() -> None:
     )
     compare_parser.add_argument("prompt")
     compare_parser.add_argument("--debug", action="store_true")
+    compare_parser.add_argument("--reingest", action="store_true")
 
     args = parser.parse_args()
 
@@ -44,7 +46,7 @@ def main() -> None:
         return
 
     if args.command == "compare":
-        _ensure_demo_profiles_ingested()
+        _ensure_demo_profiles_ingested(force=args.reingest)
         for profile in ("alice", "bob"):
             result = augment_for_profile(args.prompt, profile=profile)
             print("=" * 72)
@@ -54,13 +56,17 @@ def main() -> None:
             print()
 
 
-def _ensure_demo_profiles_ingested() -> None:
+def _ensure_demo_profiles_ingested(force: bool = False, profiles_root: Path = PROFILES_DIR) -> None:
     for profile in ("alice", "bob"):
-        memory_file = PROFILES_DIR / profile / "memory.md"
-        if memory_file.exists():
-            ingest_path(profile=profile, source_path=memory_file)
+        memory_file = profiles_root / profile / "memory.md"
+        if memory_file.exists() and (force or _needs_ingest(profile, memory_file, profiles_root)):
+            ingest_path(profile=profile, source_path=memory_file, profiles_root=profiles_root)
+
+
+def _needs_ingest(profile: str, memory_file: Path, profiles_root: Path = PROFILES_DIR) -> bool:
+    path = store_path(profile, profiles_root)
+    return not path.exists() or path.stat().st_mtime < memory_file.stat().st_mtime
 
 
 if __name__ == "__main__":
     main()
-

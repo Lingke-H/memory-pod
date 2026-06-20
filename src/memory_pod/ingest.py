@@ -42,6 +42,7 @@ def ingest_path(
 
     local_embedder = embedder or get_embedder()
     vectors = local_embedder.embed(chunk for _, chunk in chunks)
+    embedder_id = local_embedder.identity
 
     records = []
     for (file_path, chunk), vector in zip(chunks, vectors, strict=True):
@@ -54,6 +55,7 @@ def ingest_path(
                 weight=1.0,
                 created_at=datetime.now(UTC).isoformat(),
                 source=str(file_path),
+                embedder=embedder_id,
                 embedding=vector.astype(float).tolist(),
             )
         )
@@ -98,4 +100,3 @@ def chunk_text(text: str, max_chars: int = 900) -> list[str]:
 def make_record_id(file_path: Path, chunk: str) -> str:
     digest = hashlib.sha256(f"{file_path}:{chunk}".encode("utf-8")).hexdigest()[:16]
     return f"chunk_{digest}"
-

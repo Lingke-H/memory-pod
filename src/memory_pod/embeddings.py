@@ -23,6 +23,10 @@ TOKEN_RE = re.compile(r"[A-Za-z0-9_']+")
 
 
 class Embedder(Protocol):
+    @property
+    def identity(self) -> str:
+        """Stable identifier for the vector space this embedder produces."""
+
     def embed(self, texts: Iterable[str]) -> np.ndarray:
         """Return one normalized vector per input text."""
 
@@ -32,6 +36,10 @@ class HashingEmbedder:
     """Small deterministic local fallback for hackathon reliability."""
 
     dimensions: int = 384
+
+    @property
+    def identity(self) -> str:
+        return f"hashing-v1:{self.dimensions}"
 
     def embed(self, texts: Iterable[str]) -> np.ndarray:
         vectors = [self._embed_one(text) for text in texts]
@@ -59,7 +67,12 @@ class SentenceTransformerEmbedder:
     def __init__(self, model_name: str = DEFAULT_MODEL_NAME) -> None:
         from sentence_transformers import SentenceTransformer
 
+        self.model_name = model_name
         self.model = SentenceTransformer(model_name, local_files_only=True)
+
+    @property
+    def identity(self) -> str:
+        return f"sentence-transformers:{self.model_name}"
 
     def embed(self, texts: Iterable[str]) -> np.ndarray:
         text_list = list(texts)

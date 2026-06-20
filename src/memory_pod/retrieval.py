@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -10,6 +11,8 @@ import numpy as np
 from memory_pod.embeddings import Embedder, get_embedder
 from memory_pod.config import PROFILES_DIR
 from memory_pod.memory_store import MemoryRecord, load_records
+
+LOGGER = logging.getLogger("memory_pod.retrieval")
 
 
 @dataclass(frozen=True)
@@ -45,13 +48,25 @@ def retrieve(
 
 
 def _memory_vectors(records: list[MemoryRecord], embedder: Embedder) -> np.ndarray:
-    missing_texts = [record.text for record in records if record.embedding is None]
-    missing_vectors = iter(embedder.embed(missing_texts)) if missing_texts else iter(())
+    active_embedder = embedder.identity
+    texts_to_embed = [
+        record.text
+        for record in records
+        if record.embedding is None or record.embedder != active_embedder
+    ]
+    fresh_vectors = iter(embedder.embed(texts_to_embed)) if texts_to_embed else iter(())
 
     vectors = []
     for record in records:
-        if record.embedding is None:
-            vector = next(missing_vectors)
+        if record.embedding is None or record.embedder != active_embedder:
+            if record.embedding is not None and record.embedder != active_embedder:
+                LOGGER.info(
+                    "Re-embedding memory %s because it was stored with %s but active embedder is %s.",
+                    record.id,
+                    record.embedder,
+                    active_embedder,
+                )
+            vector = next(fresh_vectors)
         else:
             vector = np.array(record.embedding, dtype=np.float32)
         norm = np.linalg.norm(vector)

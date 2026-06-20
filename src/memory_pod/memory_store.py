@@ -20,6 +20,7 @@ class MemoryRecord:
     weight: float = 1.0
     created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     source: str | None = None
+    embedder: str | None = None
     embedding: list[float] | None = None
 
     @classmethod
@@ -32,6 +33,7 @@ class MemoryRecord:
             weight=float(payload.get("weight", 1.0)),
             created_at=str(payload.get("created_at", datetime.now(UTC).isoformat())),
             source=payload.get("source"),
+            embedder=payload.get("embedder"),
             embedding=payload.get("embedding"),
         )
 
@@ -80,4 +82,3 @@ def upsert_records(
     for record in new_records:
         existing[record.id] = record
     return write_records(profile, existing.values(), profiles_root)
-
