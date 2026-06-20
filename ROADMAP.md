@@ -4,6 +4,8 @@
 > wow-factor** without breaking the constitution's red lines (local-first only,
 > no cloud memory) or the `augment()` contract. See
 > [PROJECT_DESCRIPTION_V3.md](PROJECT_DESCRIPTION_V3.md) for the source of truth.
+> For day-to-day work, use [docs/COLLABORATION.md](docs/COLLABORATION.md) and
+> [docs/TASK_BOARD.md](docs/TASK_BOARD.md).
 
 ## Context
 

@@ -23,6 +23,24 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
+Or use:
+
+```bash
+make setup
+```
+
+## Collaboration
+
+- [Collaboration guide](docs/COLLABORATION.md)
+- [Task board](docs/TASK_BOARD.md)
+- [Demo runbook](docs/DEMO_RUNBOOK.md)
+- [Handoff template](docs/HANDOFF_TEMPLATE.md)
+
+The repo is split across two lanes:
+
+- Engine: everything behind `augment()`.
+- Interaction: everything that calls `augment()`.
+
 ## Demo Commands
 
 Ingest the checked-in demo memory files:
@@ -38,6 +56,12 @@ Run the main "same prompt, different memory" demo:
 python -m memory_pod.cli compare --debug "help me write this application"
 ```
 
+Or:
+
+```bash
+make demo
+```
+
 Furnish one prompt:
 
 ```bash
@@ -49,6 +73,12 @@ python -m memory_pod.cli augment --profile alice --debug "help me prepare for th
 ```bash
 python -m compileall src tests scripts
 pytest
+```
+
+Or:
+
+```bash
+make check
 ```
 
 ## macOS Note
