@@ -9,6 +9,7 @@ from memory_pod.augment import augment_for_profile
 from memory_pod.config import DEFAULT_PROFILE, PROFILES_DIR
 from memory_pod.ingest import ingest_path
 from memory_pod.memory_store import store_path
+from memory_pod.remember import remember
 
 
 def main() -> None:
@@ -32,6 +33,19 @@ def main() -> None:
     compare_parser.add_argument("--debug", action="store_true")
     compare_parser.add_argument("--reingest", action="store_true")
 
+    remember_parser = subparsers.add_parser(
+        "remember",
+        help="Save a new local memory into a profile (write-back).",
+    )
+    remember_parser.add_argument("text")
+    remember_parser.add_argument("--profile", default=DEFAULT_PROFILE)
+    remember_parser.add_argument(
+        "--tag",
+        action="append",
+        dest="tags",
+        help="Optional tag for this memory; repeat for multiple tags.",
+    )
+
     args = parser.parse_args()
 
     if args.command == "ingest":
@@ -43,6 +57,12 @@ def main() -> None:
     if args.command == "augment":
         result = augment_for_profile(args.prompt, profile=args.profile)
         print(result.debug_text() if args.debug else result.furnished_prompt)
+        return
+
+    if args.command == "remember":
+        record = remember(args.text, profile=args.profile, tags=args.tags or [])
+        print(f"Remembered for '{args.profile}': {record.id}")
+        print(f"  {record.text}")
         return
 
     if args.command == "compare":
