@@ -1,6 +1,8 @@
+import numpy as np
+
 from memory_pod.embeddings import HashingEmbedder
 from memory_pod.ingest import chunk_text, ingest_path
-from memory_pod.memory_store import load_records
+from memory_pod.memory_store import MemoryRecord, load_records, write_records
 from memory_pod.retrieval import retrieve
 
 
@@ -45,3 +47,78 @@ def test_retrieval_reembeds_when_embedder_identity_changes(tmp_path):
     )
 
     assert results
+
+
+def test_retrieval_filters_low_relevance_scores(tmp_path):
+    profiles_root = tmp_path / "profiles"
+    write_records(
+        "alice",
+        [
+            _record("strong", "Alice is writing an AI safety application.", [1.0, 0.0]),
+            _record("weak", "Alice likes unrelated breakfast notes.", [0.01, 0.99995]),
+        ],
+        profiles_root=profiles_root,
+    )
+
+    results = retrieve(
+        "write this application",
+        profile="alice",
+        profiles_root=profiles_root,
+        embedder=_StaticEmbedder(),
+    )
+
+    assert [result.record.id for result in results] == ["strong"]
+
+
+def test_retrieval_all_low_scores_returns_empty(tmp_path):
+    profiles_root = tmp_path / "profiles"
+    write_records(
+        "alice",
+        [_record("weak", "Alice likes unrelated breakfast notes.", [0.01, 0.99995])],
+        profiles_root=profiles_root,
+    )
+
+    results = retrieve(
+        "write this application",
+        profile="alice",
+        profiles_root=profiles_root,
+        embedder=_StaticEmbedder(),
+    )
+
+    assert results == []
+
+
+def test_retrieval_allows_custom_min_score_for_debugging(tmp_path):
+    profiles_root = tmp_path / "profiles"
+    write_records(
+        "alice",
+        [_record("weak", "Alice likes unrelated breakfast notes.", [0.01, 0.99995])],
+        profiles_root=profiles_root,
+    )
+
+    results = retrieve(
+        "write this application",
+        profile="alice",
+        profiles_root=profiles_root,
+        embedder=_StaticEmbedder(),
+        min_score=0.0,
+    )
+
+    assert [result.record.id for result in results] == ["weak"]
+
+
+def _record(record_id: str, text: str, embedding: list[float]) -> MemoryRecord:
+    return MemoryRecord(
+        id=record_id,
+        text=text,
+        embedder=_StaticEmbedder.identity,
+        embedding=embedding,
+    )
+
+
+class _StaticEmbedder:
+    identity = "static-test-v1"
+
+    def embed(self, texts):
+        text_list = list(texts)
+        return np.array([[1.0, 0.0] for _ in text_list], dtype=np.float32)

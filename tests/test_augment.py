@@ -21,3 +21,15 @@ def test_augment_uses_local_profile_memory(tmp_path):
     assert "Relevant Facts:" in result.furnished_prompt
     assert "Style And Response Guidance:" in result.furnished_prompt
     assert "AI safety" in result.furnished_prompt
+
+
+def test_augment_returns_raw_prompt_when_retrieval_filters_everything(tmp_path, monkeypatch):
+    def fake_retrieve(*args, **kwargs):
+        return []
+
+    monkeypatch.setattr("memory_pod.augment.retrieve", fake_retrieve)
+
+    result = augment_for_profile("hello", profile="alice", profiles_root=tmp_path)
+
+    assert result.memories == []
+    assert result.furnished_prompt == "hello"
