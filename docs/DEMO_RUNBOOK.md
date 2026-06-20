@@ -42,17 +42,42 @@ PYTHONPATH=src python -m memory_pod.cli augment --profile alice --debug "help me
 
 Show that `memory.md` is the source of truth.
 
-## Demo 3 — Tier 1 Popup
+## Demo 3 — "It Just Learned" (write-back)
+
+Goal: prove the memory grows. Teach a brand-new fact, then watch the next prompt
+use it. Self-contained (throwaway profile, no setup, works offline):
+
+```bash
+make demo-learn
+```
+
+Expected: the furnished prompt for `"help me write my professional bio"` now
+contains the marine-biologist fact that was remembered one step earlier.
+
+CLI variant (any profile):
+
+```bash
+PYTHONPATH=src python -m memory_pod.cli remember --profile alice "Alice just won a Rhodes scholarship."
+PYTHONPATH=src python -m memory_pod.cli augment --profile alice --debug "help me write my bio"
+```
+
+## Demo 4 — Tier 1 Popup
 
 ```bash
 PYTHONPATH=src python -m memory_pod.hotkey_popup
 ```
 
-Press `Option + Enter`, type a vague prompt, furnish, copy, paste into a model.
+Press `Option + Enter`, then:
+
+1. Type a vague prompt → **Furnish** → the furnished prompt and the retrieved
+   memories with similarity scores both appear.
+2. **Copy** → paste into a model.
+3. **Remember** → type a fact in the top box and click Remember to write it back
+   locally (the status line confirms). Furnish again to show it was learned.
 
 If macOS hotkeys fail, use the CLI demo immediately.
 
-## Demo 4 — Tier 2 Dry-Run Only
+## Demo 5 — Tier 2 Dry-Run Only
 
 ```bash
 PYTHONPATH=src python -m memory_pod.os_loop
