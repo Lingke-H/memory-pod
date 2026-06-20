@@ -14,14 +14,15 @@ dist/
 build/
 
 # Local Memory Pod data should stay on the user's machine by default.
-data/
 *.sqlite
 *.sqlite3
 *.db
+data/profiles/*/memories.jsonl
+data/profiles/*/chroma/
+data/profiles/*/faiss/
 chroma/
 faiss/
 
 # Large local model caches.
 models/
 .cache/
-

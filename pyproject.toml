@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "memory-pod"
+version = "0.1.0"
+description = "Local-first personal memory engine for AI prompt furnishing."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "numpy>=2.0.0",
+  "pyperclip>=1.9.0",
+  "pynput>=1.8.0",
+  "sentence-transformers>=3.0.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0.0"]
+
+[project.scripts]
+memory-pod = "memory_pod.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+

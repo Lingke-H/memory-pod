@@ -15,20 +15,12 @@ import time
 from dataclasses import dataclass
 from typing import Callable
 
-import pyperclip
 from pynput import keyboard
+import pyperclip
+
+from memory_pod.augment import augment
 
 LOGGER = logging.getLogger("memory_pod.os_loop")
-
-
-def augment_memory(text: str) -> str:
-    """Temporary stand-in for memory_pod.augment.augment(raw_prompt)."""
-    return (
-        "[Hidden Context]\n"
-        "- Demo memory: the user prefers concise, context-aware answers.\n\n"
-        "[User Query]\n"
-        f"{text}"
-    )
 
 
 @dataclass(frozen=True)
@@ -46,10 +38,10 @@ class MemoryPodHotkeyLoop:
 
     def __init__(
         self,
-        augment: Callable[[str], str] = augment_memory,
+        augment_fn: Callable[[str], str] = augment,
         config: HotkeyConfig | None = None,
     ) -> None:
-        self.augment = augment
+        self.augment = augment_fn
         self.config = config or HotkeyConfig()
         self.controller = keyboard.Controller()
         self._lock = threading.Lock()
