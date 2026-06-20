@@ -44,4 +44,3 @@ def remember(
 def make_memory_id(profile: str, source: str, text: str) -> str:
     digest = hashlib.sha256(f"{profile}:{source}:{text}".encode("utf-8")).hexdigest()[:16]
     return f"manual_{digest}"
-
