@@ -1,4 +1,4 @@
-.PHONY: setup check test compile seed demo demo-reingest demo-learn clean
+.PHONY: setup check test compile seed demo demo-reingest demo-learn judge popup clean
 
 PYTHON ?= python
 
@@ -25,6 +25,12 @@ demo-reingest:
 
 demo-learn:
 	PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src $(PYTHON) scripts/demo_learn.py
+
+judge:
+	PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src $(PYTHON) scripts/judge_demo.py
+
+popup:
+	PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src $(PYTHON) -m memory_pod.hotkey_popup
 
 clean:
 	rm -rf .pytest_cache

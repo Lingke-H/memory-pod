@@ -2,6 +2,35 @@
 
 The must-survive demo is Tier 0. Tier 1 and Tier 2 are bonuses.
 
+## 3-Minute Judge Script
+
+This is the **frozen** live path. One command drives Acts 1–2 and cues Act 3:
+
+```bash
+make judge          # press Enter to advance between acts
+```
+
+Keep a second terminal ready for the popup: `make popup`.
+
+| Time | Act | Command (driven by `make judge`) | Say | Expected on screen |
+| --- | --- | --- | --- | --- |
+| 0:00–1:00 | 1 — Same prompt, different memory | `make demo` | "Alice and Bob type the SAME vague prompt — watch them diverge." | Alice → academic / AI-safety framing; Bob → B2B founder / sales framing; sources + similarity scores. |
+| 1:00–2:00 | 2 — It just learned | `make demo-learn` | "Memory grows locally. I teach one fact, the next prompt uses it." | The furnished prompt for the marathon prompt now contains the just-remembered marathon fact. |
+| 2:00–3:00 | 3 — Live popup | `make popup` (2nd terminal) | "And it's one keystroke away, fully local." | Option+Enter → type prompt → **Furnish** shows memories+scores → **Copy** (status confirms) → optional **Remember** (status confirms). |
+
+### Fallback decision tree (rehearse this)
+
+- **macOS hotkey / Accessibility permission fails** (Option+Enter does nothing) →
+  skip the popup, run the CLI popup-equivalent live:
+  `PYTHONPATH=src python -m memory_pod.cli augment --profile alice --debug "<prompt>"`.
+- **Popup crashes or hangs mid-demo** → immediately fall back to the terminal path:
+  `make demo && make demo-learn` (Acts 1–2 alone tell the whole story).
+- **Anything else breaks** → Tier 0 `make demo` is the must-survive demo. If only one
+  thing works, make it that.
+
+> Tip: run `make judge` once before judging so the demo profiles are already
+> ingested and the first run isn't slowed by ingest.
+
 ## Pre-Demo Setup
 
 ```bash

@@ -63,9 +63,12 @@ class HotkeyPopup:
         memories = tk.Text(root, height=8, wrap="word")
         memories.pack(fill="both", expand=True, padx=12, pady=(0, 6))
 
+        status = tk.StringVar(value=f"Profile: {self.profile}")
+
         def furnish() -> None:
             raw = prompt.get("1.0", "end").strip()
             if not raw:
+                status.set("Type a prompt in the top box, then click Furnish.")
                 return
             result = augment_for_profile(raw, profile=self.profile)
 
@@ -77,13 +80,18 @@ class HotkeyPopup:
                 for index, item in enumerate(result.memories, start=1):
                     snippet = " ".join(item.record.text.split())
                     memories.insert("end", f"{index}. score={item.score:.3f}  {snippet}\n")
+                status.set(f"✓ Furnished — {len(result.memories)} memorie(s) retrieved. Click Copy to use it.")
             else:
                 memories.insert("1.0", "(no memories retrieved)")
+                status.set("✓ Furnished — no matching memories retrieved.")
 
         def copy_output() -> None:
-            pyperclip.copy(output.get("1.0", "end").strip())
-
-        status = tk.StringVar(value=f"Profile: {self.profile}")
+            text = output.get("1.0", "end").strip()
+            if not text:
+                status.set("Nothing to copy yet — click Furnish first.")
+                return
+            pyperclip.copy(text)
+            status.set("✓ Copied furnished prompt to clipboard.")
 
         def remember_input() -> None:
             text = prompt.get("1.0", "end").strip()

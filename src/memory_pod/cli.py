@@ -66,19 +66,28 @@ def main() -> None:
         return
 
     if args.command == "compare":
-        _ensure_demo_profiles_ingested(force=args.reingest)
-        print("#" * 72)
-        print("# MEMORY POD — same prompt, different memory")
-        print(f'# Prompt: "{args.prompt}"')
-        print("#" * 72)
+        run_compare(args.prompt, debug=args.debug, reingest=args.reingest)
+
+
+def run_compare(prompt: str, *, debug: bool = True, reingest: bool = False) -> None:
+    """Run the marquee "same prompt, different memory" demo for alice and bob.
+
+    Shared entry point so the judge demo (scripts/judge_demo.py) produces output
+    identical to `make demo`.
+    """
+    _ensure_demo_profiles_ingested(force=reingest)
+    print("#" * 72)
+    print("# MEMORY POD — same prompt, different memory")
+    print(f'# Prompt: "{prompt}"')
+    print("#" * 72)
+    print()
+    for profile in ("alice", "bob"):
+        result = augment_for_profile(prompt, profile=profile)
+        print("=" * 72)
+        print(f"PROFILE: {profile}")
+        print("=" * 72)
+        print(result.debug_text() if debug else result.furnished_prompt)
         print()
-        for profile in ("alice", "bob"):
-            result = augment_for_profile(args.prompt, profile=profile)
-            print("=" * 72)
-            print(f"PROFILE: {profile}")
-            print("=" * 72)
-            print(result.debug_text() if args.debug else result.furnished_prompt)
-            print()
 
 
 def _ensure_demo_profiles_ingested(force: bool = False, profiles_root: Path = PROFILES_DIR) -> None:
