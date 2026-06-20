@@ -18,4 +18,6 @@ def test_augment_uses_local_profile_memory(tmp_path):
     )
 
     assert "[Hidden Context]" in result.furnished_prompt
+    assert "Relevant Facts:" in result.furnished_prompt
+    assert "Style And Response Guidance:" in result.furnished_prompt
     assert "AI safety" in result.furnished_prompt
