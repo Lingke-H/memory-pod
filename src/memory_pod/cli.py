@@ -61,12 +61,17 @@ def main() -> None:
 
     if args.command == "remember":
         record = remember(args.text, profile=args.profile, tags=args.tags or [])
-        print(f"Remembered for '{args.profile}': {record.id}")
+        print(f"✓ Remembered for '{args.profile}': {record.id}")
         print(f"  {record.text}")
         return
 
     if args.command == "compare":
         _ensure_demo_profiles_ingested(force=args.reingest)
+        print("#" * 72)
+        print("# MEMORY POD — same prompt, different memory")
+        print(f'# Prompt: "{args.prompt}"')
+        print("#" * 72)
+        print()
         for profile in ("alice", "bob"):
             result = augment_for_profile(args.prompt, profile=profile)
             print("=" * 72)

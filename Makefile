@@ -1,4 +1,4 @@
-.PHONY: setup check test compile seed demo demo-reingest clean
+.PHONY: setup check test compile seed demo demo-reingest demo-learn clean
 
 PYTHON ?= python
 
@@ -22,6 +22,9 @@ demo:
 
 demo-reingest:
 	PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src $(PYTHON) -m memory_pod.cli compare --reingest --debug "help me write this application"
+
+demo-learn:
+	PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src $(PYTHON) scripts/demo_learn.py
 
 clean:
 	rm -rf .pytest_cache
