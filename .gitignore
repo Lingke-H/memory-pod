@@ -1,0 +1,27 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+.env
+.env.*
+*.egg-info/
+dist/
+build/
+
+# Local Memory Pod data should stay on the user's machine by default.
+data/
+*.sqlite
+*.sqlite3
+*.db
+chroma/
+faiss/
+
+# Large local model caches.
+models/
+.cache/
+
