@@ -1,8 +1,10 @@
 """Tier 1 hotkey popup.
 
 This safe interaction layer summons Memory Pod's own small input window instead
-of hijacking another app's input box. It only calls augment(); it does not know
-anything about the memory store or retrieval internals.
+of hijacking another app's input box. It only calls the public augment contract
+(augment_for_profile); it does not know anything about the memory store or
+retrieval internals. The popup also shows the retrieved memories and their
+similarity scores so the personalization is visible during a demo.
 """
 
 from __future__ import annotations
@@ -16,14 +18,18 @@ from tkinter import ttk
 import pyperclip
 from pynput import keyboard
 
-from memory_pod.augment import augment
+from memory_pod.augment import augment_for_profile
+from memory_pod.config import DEFAULT_PROFILE
 
 LOGGER = logging.getLogger("memory_pod.hotkey_popup")
 
 
 class HotkeyPopup:
-    def __init__(self, hotkey: str = "<alt>+<enter>") -> None:
+    def __init__(
+        self, hotkey: str = "<alt>+<enter>", profile: str = DEFAULT_PROFILE
+    ) -> None:
         self.hotkey = hotkey
+        self.profile = profile
         self._visible = threading.Event()
 
     def start(self) -> None:
@@ -39,22 +45,37 @@ class HotkeyPopup:
 
     def _run_window(self) -> None:
         root = tk.Tk()
-        root.title("Memory Pod")
-        root.geometry("720x420")
+        root.title(f"Memory Pod ({self.profile})")
+        root.geometry("720x560")
         root.attributes("-topmost", True)
 
-        prompt = tk.Text(root, height=7, wrap="word")
+        prompt = tk.Text(root, height=6, wrap="word")
         prompt.pack(fill="x", padx=12, pady=(12, 6))
 
-        output = tk.Text(root, height=12, wrap="word")
-        output.pack(fill="both", expand=True, padx=12, pady=6)
+        ttk.Label(root, text="Furnished prompt").pack(anchor="w", padx=12)
+        output = tk.Text(root, height=10, wrap="word")
+        output.pack(fill="both", expand=True, padx=12, pady=(0, 6))
+
+        ttk.Label(root, text="Retrieved memories (similarity scores)").pack(anchor="w", padx=12)
+        memories = tk.Text(root, height=8, wrap="word")
+        memories.pack(fill="both", expand=True, padx=12, pady=(0, 6))
 
         def furnish() -> None:
             raw = prompt.get("1.0", "end").strip()
             if not raw:
                 return
+            result = augment_for_profile(raw, profile=self.profile)
+
             output.delete("1.0", "end")
-            output.insert("1.0", augment(raw))
+            output.insert("1.0", result.furnished_prompt)
+
+            memories.delete("1.0", "end")
+            if result.memories:
+                for index, item in enumerate(result.memories, start=1):
+                    snippet = " ".join(item.record.text.split())
+                    memories.insert("end", f"{index}. score={item.score:.3f}  {snippet}\n")
+            else:
+                memories.insert("1.0", "(no memories retrieved)")
 
         def copy_output() -> None:
             pyperclip.copy(output.get("1.0", "end").strip())
