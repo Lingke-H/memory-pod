@@ -67,6 +67,17 @@ def test_stack_rejects_private_pod_in_shared_slot(tmp_path):
         )
 
 
+def test_stack_rejects_shared_pod_in_base_slot(tmp_path):
+    create_pod("Senior Review", kind="shared", pod_id="senior-review", pods_root=tmp_path)
+
+    with pytest.raises(PermissionError, match="private writable Base Pod"):
+        augment_for_stack(
+            "Review this API.",
+            PodStack(base_pod="senior-review"),
+            pods_root=tmp_path,
+        )
+
+
 def _seed_stack(pods_root):
     embedder = HashingEmbedder()
     create_pod("Jiahan", pod_id="jiahan", pods_root=pods_root)

@@ -15,11 +15,13 @@ from pynput import keyboard
 from memory_pod.augment import augment_for_stack, furnish_selected
 from memory_pod.config import DEFAULT_PROFILE, PROFILES_DIR
 from memory_pod.pods import (
+    PodManifest,
     PodStack,
     export_pod,
     import_pod,
     inspect_pod,
     list_pods,
+    pod_is_private_writable,
 )
 from memory_pod.remember import remember
 
@@ -48,6 +50,22 @@ def format_value_summary(memories, stack: PodStack) -> str:
             f"+ {shared_n} expert principle(s)."
         )
     return f"💡 Built from {base_n} of your memories."
+
+
+def available_pod_choices(
+    pods: list[PodManifest],
+    current_base: str,
+) -> tuple[list[str], list[str]]:
+    by_id = {pod.id: pod for pod in pods}
+    base = [
+        pod.id
+        for pod in pods
+        if pod.kind == "private" and not pod.read_only
+    ]
+    if current_base and current_base not in base and current_base not in by_id:
+        base.insert(0, current_base)
+    shared = [pod.id for pod in pods if pod.kind == "shared"]
+    return base, [NO_SHARED_POD, *shared]
 
 
 class HotkeyPopup:
@@ -182,23 +200,20 @@ class HotkeyPopup:
 
     def _refresh_pod_choices(self, base_selector=None, shared_selector=None) -> None:
         pods = list_pods(self.pods_root)
-        writable = [pod.id for pod in pods if not pod.read_only]
         assert self._base_var is not None and self._shared_var is not None
         current_base = self._base_var.get() or self.profile
-        if current_base not in writable:
-            writable.insert(0, current_base)
-        shared = [pod.id for pod in pods if pod.kind == "shared"]
+        base_choices, shared_choices = available_pod_choices(pods, current_base)
 
         base_selector = base_selector or self._base_selector
         shared_selector = shared_selector or self._shared_selector
         if base_selector is not None:
-            base_selector.configure(values=writable)
+            base_selector.configure(values=base_choices)
         if shared_selector is not None:
-            shared_selector.configure(values=[NO_SHARED_POD, *shared])
+            shared_selector.configure(values=shared_choices)
 
-        if self._base_var.get() not in writable:
-            self._base_var.set(writable[0])
-        if self._shared_var.get() not in [NO_SHARED_POD, *shared]:
+        if self._base_var.get() not in base_choices and base_choices:
+            self._base_var.set(base_choices[0])
+        if self._shared_var.get() not in shared_choices:
             self._shared_var.set(NO_SHARED_POD)
 
     def _current_stack(self) -> PodStack:
@@ -330,7 +345,8 @@ class HotkeyPopup:
         pod = portable.manifest
         summary = (
             f"{pod.name}\n"
-            f"Author: {pod.author or 'Unspecified (not verified)'}\n"
+            f"ID: {pod.id}\n"
+            f"Author: {pod.author or 'Unspecified'} (not verified)\n"
             f"Purpose: {pod.purpose or 'Unspecified'}\n"
             f"Version: {pod.version}\n"
             f"Records: {len(portable.records)}\n"
@@ -340,7 +356,9 @@ class HotkeyPopup:
         preview.pack(fill="both", expand=True, padx=12, pady=12)
         preview.insert("end", summary)
         for index, record in enumerate(portable.records, start=1):
+            tags = ", ".join(record["tags"]) if record["tags"] else "none"
             preview.insert("end", f"{index}. [{record['type']}] {record['text']}\n\n")
+            preview.insert("end", f"Tags: {tags}\n\n")
         preview.configure(state="disabled")
 
         buttons = ttk.Frame(dialog)

@@ -8,10 +8,16 @@ git pull --ff-only
 source .venv/bin/activate
 make check
 make pod-demo
+make demo-setup
 ```
 
 Grant the Terminal Accessibility permission before the live popup. Keep one
 terminal ready with `make popup`.
+
+`make pod-demo` is an isolated proof that exports, imports, docks, and retrieves
+inside a temporary directory. `make demo-setup` seeds the persistent local Pod
+store used by the popup, so the live Dock can see Base `jiahan` and Shared
+`senior-review`.
 
 ## Three-Minute Story
 
@@ -46,10 +52,10 @@ is the proof that Memory Pod is dynamic retrieval, not a static mega-prompt.
 
 ### Act 3 — Same Pod, Any Model
 
-Run `make popup`, press `Option + Enter`, and Dock the Shared Pod. Uncheck one
-retrieved context row and show the furnished prompt rebuilding immediately.
-Copy it and paste the same approved context into ChatGPT and Claude side by
-side. Do not auto-send.
+Run `make demo-setup`, then `make popup`, press `Option + Enter`, and Dock the
+Shared Pod. Uncheck one retrieved context row and show the furnished prompt
+rebuilding immediately. Copy it and paste the same approved context into ChatGPT
+and Claude side by side. Do not auto-send.
 
 ## Fallbacks
 

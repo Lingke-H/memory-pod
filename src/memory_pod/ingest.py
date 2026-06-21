@@ -11,7 +11,11 @@ from typing import Iterable
 
 from memory_pod.config import PROFILES_DIR, SUPPORTED_INGEST_SUFFIXES
 from memory_pod.embeddings import Embedder, get_embedder
-from memory_pod.memory_store import MemoryRecord, upsert_records
+from memory_pod.memory_store import (
+    MemoryRecord,
+    load_records,
+    replace_records_for_sources,
+)
 
 
 @dataclass(frozen=True)
@@ -33,6 +37,7 @@ def ingest_path(
     files = list(iter_text_files(path))
     if not files:
         raise FileNotFoundError(f"No .md or .txt files found at {path}")
+    sources_to_replace = _sources_to_replace(profile, path, files, profiles_root)
 
     chunks: list[tuple[Path, str]] = []
     for file_path in files:
@@ -60,7 +65,12 @@ def ingest_path(
             )
         )
 
-    written_path = upsert_records(profile, records, profiles_root)
+    written_path = replace_records_for_sources(
+        profile,
+        sources_to_replace,
+        records,
+        profiles_root,
+    )
     return IngestResult(profile=profile, records_written=len(records), store_path=written_path)
 
 
@@ -100,3 +110,26 @@ def chunk_text(text: str, max_chars: int = 900) -> list[str]:
 def make_record_id(file_path: Path, chunk: str) -> str:
     digest = hashlib.sha256(f"{file_path}:{chunk}".encode("utf-8")).hexdigest()[:16]
     return f"chunk_{digest}"
+
+
+def _sources_to_replace(
+    profile: str,
+    source_path: Path,
+    files: list[Path],
+    profiles_root: Path,
+) -> set[str]:
+    sources = {str(file_path) for file_path in files}
+    if source_path.is_file():
+        return sources
+
+    root = source_path.resolve()
+    for record in load_records(profile, profiles_root):
+        if record.type == "manual_memory" or not record.source or record.source == "manual":
+            continue
+        try:
+            source = Path(record.source).resolve()
+        except (OSError, RuntimeError):
+            continue
+        if source == root or root in source.parents:
+            sources.add(record.source)
+    return sources

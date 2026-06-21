@@ -48,7 +48,7 @@ def test_shared_pod_round_trip_strips_private_vector_data(tmp_path):
     assert exported.suffix == ".mpod"
     assert "embedding" not in payload["records"][0]
     assert "embedder" not in payload["records"][0]
-    assert payload["records"][0]["source_label"] == "architecture.md"
+    assert "source_label" not in payload["records"][0]
     assert "private/notes" not in exported.read_text(encoding="utf-8")
 
     imported = import_pod(
@@ -62,7 +62,7 @@ def test_shared_pod_round_trip_strips_private_vector_data(tmp_path):
     assert imported.origin == "imported"
     assert records[0].embedder == "hashing-v1:384"
     assert records[0].embedding
-    assert records[0].source == "mpod:senior-review:architecture.md"
+    assert records[0].source == "mpod:senior-review"
 
 
 def test_private_pod_cannot_be_exported(tmp_path):
