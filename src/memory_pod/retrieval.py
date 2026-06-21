@@ -13,6 +13,7 @@ from memory_pod.config import PROFILES_DIR
 from memory_pod.memory_store import MemoryRecord, load_records
 
 LOGGER = logging.getLogger("memory_pod.retrieval")
+DEFAULT_MIN_RELEVANCE_SCORE = 0.025
 
 
 @dataclass(frozen=True)
@@ -27,6 +28,7 @@ def retrieve(
     top_k: int = 5,
     embedder: Embedder | None = None,
     profiles_root: Path = PROFILES_DIR,
+    min_score: float = DEFAULT_MIN_RELEVANCE_SCORE,
 ) -> list[RetrievalResult]:
     records = [record for record in load_records(profile, profiles_root) if record.text.strip()]
     if not records:
@@ -43,7 +45,7 @@ def retrieve(
     return [
         RetrievalResult(record=records[index], score=float(weighted_scores[index]))
         for index in best_indexes
-        if float(weighted_scores[index]) > 0
+        if float(weighted_scores[index]) >= min_score
     ]
 
 
