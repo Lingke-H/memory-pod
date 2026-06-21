@@ -7,19 +7,46 @@ memory layer stays behind the augment() contract.
 
 from __future__ import annotations
 
+import argparse
 import logging
 import platform
 import threading
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Callable
 
 from pynput import keyboard
 import pyperclip
 
-from memory_pod.augment import augment
+from memory_pod.augment import augment, augment_for_profile, augment_for_stack
+from memory_pod.config import DEFAULT_PROFILE, PROFILES_DIR
+from memory_pod.pods import PodStack
 
 LOGGER = logging.getLogger("memory_pod.os_loop")
+
+
+def build_augment_fn(
+    base_pod: str = DEFAULT_PROFILE,
+    shared_pod: str | None = None,
+    pods_root: Path = PROFILES_DIR,
+) -> Callable[[str], str]:
+    """Furnish raw input from a Base Pod (+ optional Shared Pod).
+
+    Returns a ``str -> str`` callable that the hotkey loop pastes back in place.
+    Keeps the OS layer behind the public augment contract — it never touches the
+    store or retrieval internals directly.
+    """
+
+    def _augment(raw_prompt: str) -> str:
+        if shared_pod:
+            stack = PodStack(base_pod=base_pod, shared_pod=shared_pod)
+            return augment_for_stack(raw_prompt, stack, pods_root=pods_root).furnished_prompt
+        return augment_for_profile(
+            raw_prompt, profile=base_pod, profiles_root=pods_root
+        ).furnished_prompt
+
+    return _augment
 
 
 @dataclass(frozen=True)
@@ -151,11 +178,41 @@ class MemoryPodHotkeyLoop:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(
+        prog="memory-pod-os-loop",
+        description=(
+            "Tier 2 in-place injection. A global hotkey grabs the focused input box "
+            "(Cmd+A/Cmd+X), furnishes it with your Pod context, and pastes it back. "
+            "It NEVER auto-submits — you review and press Enter yourself."
+        ),
+    )
+    parser.add_argument(
+        "--base-pod", default=DEFAULT_PROFILE, help="Private Base Pod to furnish from."
+    )
+    parser.add_argument(
+        "--shared-pod", default=None, help="Optional read-only Shared Pod to dock."
+    )
+    parser.add_argument(
+        "--hotkey", default=HotkeyConfig.hotkey, help="Global hotkey, e.g. '<alt>+<enter>'."
+    )
+    args = parser.parse_args()
+
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
-    MemoryPodHotkeyLoop().start()
+
+    docked = args.base_pod + (f" + {args.shared_pod}" if args.shared_pod else "")
+    LOGGER.info("Docked for injection: %s", docked)
+    LOGGER.warning(
+        "SAFETY: use on ONE target site (ChatGPT OR Claude web). This pastes the "
+        "furnished prompt in place and does NOT submit — review it, then press Enter."
+    )
+
+    augment_fn = build_augment_fn(base_pod=args.base_pod, shared_pod=args.shared_pod)
+    # submit_after_paste stays False: the constitution forbids automatic submission.
+    config = HotkeyConfig(hotkey=args.hotkey)
+    MemoryPodHotkeyLoop(augment_fn=augment_fn, config=config).start()
 
 
 if __name__ == "__main__":
