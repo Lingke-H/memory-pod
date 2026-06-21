@@ -1,6 +1,12 @@
-from memory_pod.hotkey_popup import available_pod_choices, format_value_summary, pod_face
+from memory_pod.hotkey_popup import (
+    available_pod_choices,
+    format_polish_status,
+    format_value_summary,
+    pod_face,
+)
 from memory_pod.memory_store import MemoryRecord
 from memory_pod.pods import PodManifest, PodStack
+from memory_pod.rewriter import RewriteResult
 from memory_pod.retrieval import RetrievalResult
 
 
@@ -52,3 +58,25 @@ def test_available_pod_choices_excludes_shared_pods_from_base_selector():
 
     assert base_choices == ["jiahan"]
     assert shared_choices == ["(None)", "local-shared", "imported-shared"]
+
+
+def test_format_polish_status_reports_local_ai_success():
+    result = RewriteResult(
+        text="Clean prompt",
+        used_local_ai=True,
+        note="Polished locally with llama3.2.",
+    )
+
+    assert format_polish_status(result) == (
+        "Polished locally with llama3.2. Review before sending."
+    )
+
+
+def test_format_polish_status_reports_fallback_note():
+    result = RewriteResult(
+        text="Original prompt",
+        used_local_ai=False,
+        note="Local AI unavailable; using furnished prompt.",
+    )
+
+    assert format_polish_status(result) == "Local AI unavailable; using furnished prompt."

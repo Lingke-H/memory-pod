@@ -12,7 +12,8 @@ make demo-setup
 ```
 
 Grant the Terminal Accessibility permission before the live popup. Keep one
-terminal ready with `make popup`.
+terminal ready with `make popup`. Ollama is optional; without it, `Polish
+Locally` falls back to the reviewed furnished prompt.
 
 `make pod-demo` is an isolated proof that exports, imports, docks, and retrieves
 inside a temporary directory. `make demo-setup` seeds the persistent local Pod
@@ -62,16 +63,29 @@ Shared Pod. Uncheck one retrieved context row and show the furnished prompt
 rebuilding immediately. Copy it and paste the same approved context into ChatGPT
 and Claude side by side. Do not auto-send.
 
+**Optional flourish — local polish:** after Furnish, click `Polish Locally`.
+If Ollama is running, the reviewed furnished prompt is rewritten into a cleaner
+copy-ready prompt without leaving the computer. If Ollama is absent, the app
+keeps the furnished prompt and shows a fallback note. This is not the core demo
+path; it is a quality step after review.
+
 **Optional flourish — in-place injection:** instead of copy/paste, run
 `make os-loop`, focus the AI's input box, press `Option + Enter`, and the
 furnished prompt is pasted in place (never submitted). Use on ONE site only and
 keep a screen recording as a fallback; if it misbehaves live, fall back to the
 popup copy flow above.
 
+**Optional memory write-back:** while `make os-loop` is running, press
+`Option + Shift + Enter` in a focused input box to explicitly save that text
+into the private Base Pod. It copies only; it does not cut, paste, submit, or
+learn in the background.
+
 ## Fallbacks
 
 - Hotkey ignored: verify Terminal under macOS Privacy & Security > Accessibility.
 - Popup unavailable: run `memory-pod augment --base-pod ... --shared-pod ... --debug`.
+- Ollama unavailable: skip `Polish Locally`; the furnished prompt is already
+  copy-ready.
 - Model cache unavailable: the deterministic local hashing fallback still
   works and rejects records with no real lexical overlap.
 - Any presentation issue: `make pod-demo` alone proves Own, Carry, Dock, and

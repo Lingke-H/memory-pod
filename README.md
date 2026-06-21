@@ -99,8 +99,10 @@ make popup
 ```
 
 Press `Option + Enter`, select a Base and optional Shared Pod, review or
-deselect retrieved context, then copy the furnished prompt. The popup never
-auto-submits.
+deselect retrieved context, then copy the furnished prompt. `Polish Locally`
+can optionally ask local Ollama to turn the reviewed furnished prompt into a
+cleaner copy-ready prompt; if Ollama is not running, the inspected furnished
+prompt stays unchanged. The popup never auto-submits.
 
 ### In-place injection into an AI input box (Tier 2)
 
@@ -118,6 +120,11 @@ It does `Cmd+A / Cmd+X`, furnishes the text, and pastes the result back. It
 **never submits** — you review it and press Enter yourself. Use it on **one**
 target site (ChatGPT *or* Claude web), grant Terminal Accessibility permission,
 and keep a screen recording as a fallback. Not a browser extension.
+
+The OS loop does not learn automatically. To explicitly save the focused input
+into your private Base Pod, press `Option + Shift + Enter`. That path uses
+`Cmd+A / Cmd+C`, writes one local memory with source `os-hotkey`, restores your
+clipboard, and does not paste or submit anything.
 
 ## Demos
 
@@ -139,7 +146,8 @@ make check
 
 ## Privacy Boundary
 
-The Pod store, embeddings, and retrieval stay local. Portable `.mpod` files do
-not contain embeddings or absolute source paths. When you copy and send a
-furnished prompt to ChatGPT, Claude, or another provider, the context snippets
-you approved become part of that prompt and therefore leave your machine.
+The Pod store, embeddings, retrieval, and optional Ollama polishing stay local.
+Portable `.mpod` files do not contain embeddings or absolute source paths. When
+you copy and send a furnished or polished prompt to ChatGPT, Claude, or another
+provider, the context snippets you approved become part of that prompt and
+therefore leave your machine.

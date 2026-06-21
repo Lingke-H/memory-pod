@@ -1,6 +1,6 @@
 from memory_pod.embeddings import HashingEmbedder
-from memory_pod.memory_store import MemoryRecord, write_records
-from memory_pod.os_loop import build_augment_fn
+from memory_pod.memory_store import MemoryRecord, load_records, write_records
+from memory_pod.os_loop import HotkeyConfig, build_augment_fn, build_remember_fn
 from memory_pod.pods import create_pod
 
 PROMPT = "Review this API design and keep the explanation concise."
@@ -52,3 +52,52 @@ def test_build_augment_fn_docks_shared_pod(tmp_path, monkeypatch):
 
     assert "Private User Context" in furnished
     assert "Docked Shared Playbook" in furnished
+
+
+def test_build_remember_fn_writes_os_hotkey_memory(tmp_path, monkeypatch):
+    _seed(tmp_path)
+    monkeypatch.setattr("memory_pod.remember.get_embedder", lambda: HashingEmbedder())
+
+    status = build_remember_fn(base_pod="jiahan", pods_root=tmp_path)(
+        "I prefer review comments that name concrete failure modes."
+    )
+
+    records = load_records("jiahan", profiles_root=tmp_path)
+    remembered = [record for record in records if record.source == "os-hotkey"]
+    assert remembered
+    assert remembered[0].type == "manual_memory"
+    assert remembered[0].text == "I prefer review comments that name concrete failure modes."
+    assert "Remembered" in status
+
+
+def test_build_remember_fn_ignores_empty_text(tmp_path, monkeypatch):
+    _seed(tmp_path)
+    monkeypatch.setattr("memory_pod.remember.get_embedder", lambda: HashingEmbedder())
+
+    status = build_remember_fn(base_pod="jiahan", pods_root=tmp_path)("   \n")
+
+    records = load_records("jiahan", profiles_root=tmp_path)
+    assert all(record.source != "os-hotkey" for record in records)
+    assert "No text" in status
+
+
+def test_build_remember_fn_rejects_shared_base_pod(tmp_path, monkeypatch):
+    _seed(tmp_path)
+    monkeypatch.setattr("memory_pod.remember.get_embedder", lambda: HashingEmbedder())
+
+    try:
+        build_remember_fn(base_pod="senior-review", pods_root=tmp_path)(
+            "Shared Pods must stay read-only."
+        )
+    except PermissionError as exc:
+        assert "private writable" in str(exc)
+    else:
+        raise AssertionError("shared Pod remember unexpectedly succeeded")
+
+
+def test_hotkey_config_has_distinct_augment_and_remember_hotkeys():
+    config = HotkeyConfig()
+
+    assert config.hotkey == "<alt>+<enter>"
+    assert config.remember_hotkey == "<alt>+<shift>+<enter>"
+    assert config.hotkey != config.remember_hotkey
