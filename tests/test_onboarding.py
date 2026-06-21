@@ -63,23 +63,23 @@ def test_seed_experts_creates_six_shared_pods(tmp_path):
     seeded = seed_experts(pods_root=tmp_path, embedder=HashingEmbedder())
 
     assert set(seeded) == {
-        "resume",
-        "cover-letter",
-        "coding",
-        "email",
-        "marketing",
-        "academic",
+        "lawyer",
+        "accountant",
+        "financial-advisor",
+        "management-consultant",
+        "marketing-strategist",
+        "hr-specialist",
     }
-    manifest = get_pod_manifest("resume", tmp_path)
+    manifest = get_pod_manifest("lawyer", tmp_path)
     assert manifest is not None and manifest.kind == "shared"
-    assert load_records("resume", tmp_path)  # playbook ingested as records
+    assert load_records("lawyer", tmp_path)  # playbook ingested as records
 
 
 def test_seed_experts_is_idempotent(tmp_path):
     seed_experts(pods_root=tmp_path, embedder=HashingEmbedder())
     seed_experts(pods_root=tmp_path, embedder=HashingEmbedder())  # must not crash
 
-    ids = [record.id for record in load_records("coding", tmp_path)]
+    ids = [record.id for record in load_records("lawyer", tmp_path)]
     assert len(ids) == len(set(ids))  # source reconciliation -> no duplicates
 
 

@@ -13,6 +13,7 @@ from tkinter import filedialog, messagebox, ttk
 import pyperclip
 from pynput import keyboard
 
+from memory_pod.active_dock import write_active_dock
 from memory_pod.augment import augment_for_stack, furnish_selected
 from memory_pod.config import DEFAULT_PROFILE, PROFILES_DIR
 from memory_pod.llm import ollama_available
@@ -294,6 +295,9 @@ class HotkeyPopup:
             row=1, column=2, padx=(0, 8)
         )
         ttk.Button(dock, text="Share Pod", command=self._share_pod).grid(row=1, column=3)
+        ttk.Button(
+            dock, text="Confirm → Hotkey", command=self._confirm_hotkey_pod
+        ).grid(row=1, column=4, padx=(8, 0))
         dock.columnconfigure(0, weight=1)
         dock.columnconfigure(1, weight=1)
 
@@ -364,6 +368,21 @@ class HotkeyPopup:
 
     def _on_dock_change(self, _event=None) -> None:
         self._set_dock_status()
+
+    def _confirm_hotkey_pod(self) -> None:
+        """Point the running OS-loop hotkey at the currently selected pods.
+
+        Writes the shared active-dock file the daemon re-reads each Option+Enter,
+        so the global hotkey switches person without restarting the daemon.
+        """
+        stack = self._current_stack()
+        write_active_dock(
+            stack.base_pod, stack.shared_pod, home=self.pods_root.parent
+        )
+        label = f"{pod_face(stack.base_pod)} {stack.base_pod}"
+        if stack.shared_pod:
+            label += f" + {pod_face(stack.shared_pod)} {stack.shared_pod}"
+        self._set_status(f"Option+Enter now uses {label} — no restart needed.")
 
     def _set_dock_status(self) -> None:
         if self._status is None:
