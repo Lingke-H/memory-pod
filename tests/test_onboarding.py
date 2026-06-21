@@ -49,6 +49,16 @@ def test_complete_about_you_is_idempotent(tmp_path, monkeypatch):
     assert len(ids) == len(set(ids))  # stable ids -> no duplicates
 
 
+def test_complete_about_you_handles_skipped_name(tmp_path, monkeypatch):
+    # Skipping every question (empty name) must not crash; falls back to "me".
+    monkeypatch.setattr("memory_pod.remember.get_embedder", lambda: HashingEmbedder())
+
+    pod_id = complete_about_you("", "", "", "", pods_root=tmp_path)
+
+    assert pod_id == "me"
+    assert get_pod_manifest("me", tmp_path) is not None
+
+
 def test_seed_experts_creates_six_shared_pods(tmp_path):
     seeded = seed_experts(pods_root=tmp_path, embedder=HashingEmbedder())
 

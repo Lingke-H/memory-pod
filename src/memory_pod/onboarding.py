@@ -64,9 +64,14 @@ def complete_about_you(
     Idempotent: re-running reuses the existing Pod and, thanks to stable record
     ids, does not duplicate facts. Returns the Base Pod id.
     """
-    pod_id = _slugify(name) or "me"
+    clean_name = (name or "").strip()
+    # _slugify raises on empty / non-alphanumeric names, so guard before calling.
+    try:
+        pod_id = _slugify(clean_name) if clean_name else "me"
+    except ValueError:
+        pod_id = "me"
     if get_pod_manifest(pod_id, pods_root) is None:
-        create_pod(name.strip() or "You", kind="private", pod_id=pod_id, pods_root=pods_root)
+        create_pod(clean_name or "You", kind="private", pod_id=pod_id, pods_root=pods_root)
 
     for fact in about_you_facts(name, role, working_on, style):
         remember(fact, profile=pod_id, source="onboarding", profiles_root=pods_root)
