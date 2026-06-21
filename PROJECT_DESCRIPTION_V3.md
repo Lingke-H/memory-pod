@@ -1,5 +1,9 @@
 # Memory Pod — Project Constitution v3
 
+> **Superseded for new work:** MVP v1.1 terminology and scope now live in
+> [PROJECT_DESCRIPTION_V4.md](PROJECT_DESCRIPTION_V4.md). Keep this document as
+> the historical v1.0 constitution and tier rationale.
+
 > Project-level context for Codex / Claude Code during a **24-hour hackathon**.
 > Read this before every coding task. The goal is to protect the product thesis,
 > tier boundaries, demo reliability, and the local-first privacy promise.

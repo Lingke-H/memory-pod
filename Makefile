@@ -1,10 +1,10 @@
-.PHONY: setup check test compile seed demo demo-reingest demo-learn judge popup clean
+.PHONY: setup check test compile seed demo demo-reingest demo-learn pod-demo judge popup clean
 
 PYTHON ?= python
 
 setup:
 	$(PYTHON) -m pip install -r requirements.txt
-	$(PYTHON) -m pip install -e .
+	$(PYTHON) -m pip install --no-deps --no-build-isolation .
 
 check: compile test
 
@@ -26,6 +26,9 @@ demo-reingest:
 demo-learn:
 	PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src $(PYTHON) scripts/demo_learn.py
 
+pod-demo:
+	PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src $(PYTHON) scripts/pod_demo.py
+
 judge:
 	PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src $(PYTHON) scripts/judge_demo.py
 
@@ -36,4 +39,3 @@ clean:
 	rm -rf .pytest_cache
 	rm -rf src/memory_pod/__pycache__ tests/__pycache__ scripts/__pycache__
 	rm -f data/profiles/*/memories.jsonl
-
