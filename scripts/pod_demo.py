@@ -22,7 +22,14 @@ def main() -> None:
         create_pod("Jiahan", pod_id="jiahan", pods_root=recipient_root)
         _write_embedded_records(
             "jiahan",
-            ["Jiahan prefers concise technical explanations with explicit tradeoffs."],
+            [
+                # Summary (no style/fact keyword): who they are.
+                "Jiahan is a backend engineer who designs REST and gRPC APIs for a payments platform.",
+                # Facts ("current project"): what they are working on now.
+                "Jiahan's current project is redesigning the checkout service API with backward compatibility in mind.",
+                # Style ("prefers"): how they want the answer written (API-relevant so it ranks).
+                "Jiahan prefers concise, example-driven explanations of API tradeoffs over long essays.",
+            ],
             recipient_root,
             embedder,
         )
