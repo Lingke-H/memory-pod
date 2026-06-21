@@ -82,6 +82,23 @@ Press `Option + Enter`, select a Base and optional Shared Pod, review or
 deselect retrieved context, then copy the furnished prompt. The popup never
 auto-submits.
 
+### In-place injection into an AI input box (Tier 2)
+
+For a "no copy/paste" flow, a global hotkey can grab the focused input box,
+furnish it with your Pod context, and paste it back in place:
+
+```bash
+make os-loop
+# or choose pods explicitly:
+PYTHONPATH=src python -m memory_pod.os_loop --base-pod jiahan --shared-pod senior-review
+```
+
+Press the hotkey (`Option + Enter`) while your cursor is in the AI's text box.
+It does `Cmd+A / Cmd+X`, furnishes the text, and pastes the result back. It
+**never submits** — you review it and press Enter yourself. Use it on **one**
+target site (ChatGPT *or* Claude web), grant Terminal Accessibility permission,
+and keep a screen recording as a fallback. Not a browser extension.
+
 ## Demos
 
 ```bash

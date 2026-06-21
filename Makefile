@@ -1,4 +1,4 @@
-.PHONY: setup check test compile seed demo demo-reingest demo-learn pod-demo demo-setup judge popup clean
+.PHONY: setup check test compile seed demo demo-reingest demo-learn pod-demo demo-setup judge popup os-loop clean
 
 PYTHON ?= python
 
@@ -37,6 +37,11 @@ judge:
 
 popup:
 	PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src $(PYTHON) -m memory_pod.hotkey_popup
+
+# Tier 2 in-place injection into ONE AI site (pairs with `make demo-setup`).
+# Pastes the furnished prompt into the focused input box; never auto-submits.
+os-loop:
+	PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src $(PYTHON) -m memory_pod.os_loop --base-pod jiahan --shared-pod senior-review
 
 clean:
 	rm -rf .pytest_cache

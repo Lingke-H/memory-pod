@@ -57,6 +57,12 @@ Shared Pod. Uncheck one retrieved context row and show the furnished prompt
 rebuilding immediately. Copy it and paste the same approved context into ChatGPT
 and Claude side by side. Do not auto-send.
 
+**Optional flourish — in-place injection:** instead of copy/paste, run
+`make os-loop`, focus the AI's input box, press `Option + Enter`, and the
+furnished prompt is pasted in place (never submitted). Use on ONE site only and
+keep a screen recording as a fallback; if it misbehaves live, fall back to the
+popup copy flow above.
+
 ## Fallbacks
 
 - Hotkey ignored: verify Terminal under macOS Privacy & Security > Accessibility.
