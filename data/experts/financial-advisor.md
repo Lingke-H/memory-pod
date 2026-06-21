@@ -1,4 +1,4 @@
-# Financial Advisor Expert Playbook
+# Personal Finance Planning Shared Playbook
 
 General personal-finance principles, not individualized investment advice. A
 real plan depends on someone's full situation, risk tolerance, and goals.

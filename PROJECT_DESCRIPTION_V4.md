@@ -27,7 +27,7 @@ decision frameworks—not identity or tacit judgment.
 ## MVP v1.1 Workflow
 
 1. Create a private Base Pod and ingest local `.md` / `.txt` files.
-2. Create a separate Shared Pod containing an explicit Expert Playbook.
+2. Create a separate Shared Pod containing an explicit playbook or task lens.
 3. Export the Shared Pod as an inspectable `.mpod` file.
 4. Send it through AirDrop or any ordinary file channel.
 5. The recipient previews it, imports it read-only, and re-embeds it locally.

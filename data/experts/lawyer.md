@@ -1,4 +1,4 @@
-# Lawyer Expert Playbook
+# Legal Issue-Spotting Shared Playbook
 
 General legal best-practices and reasoning frameworks, not legal advice. Always
 consult a licensed attorney in the relevant jurisdiction for an actual matter.

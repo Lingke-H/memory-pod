@@ -87,9 +87,9 @@ def seed_experts(
     pods_root: Path = PODS_DIR,
     embedder=None,
 ) -> list[str]:
-    """Import bundled starter Expert Pods as ready-to-dock Shared Pods.
+    """Import bundled starter Shared Playbook Pods.
 
-    Idempotent: existing starter Expert Pods are re-ingested (source
+    Idempotent: existing starter Shared Pods are re-ingested (source
     reconciliation keeps them current) rather than recreated. Returns the seeded
     pod ids.
     """
@@ -102,7 +102,7 @@ def seed_experts(
                 name,
                 kind="shared",
                 author="Memory Pod (starter)",
-                purpose=f"Starter {name} playbook from common best-practices.",
+                purpose=f"Starter shared playbook/task lens for {name.lower()} workflows.",
                 pod_id=pod_id,
                 pods_root=pods_root,
             )

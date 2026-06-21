@@ -22,8 +22,8 @@ store used by the popup, so the live Dock can see Base `jiahan` and Shared
 
 For a first-run product walkthrough rather than the frozen judge script, run
 `make onboard`. It creates a private My Pod from a few "about you" answers and
-loads starter Expert Pods. Keep this as the answer to "where does the user's
-memory come from?" without changing the main three-minute demo path.
+loads starter Shared Playbooks. Keep this as the answer to "where does the
+user's memory come from?" without changing the main three-minute demo path.
 
 ## Three-Minute Story
 
@@ -52,6 +52,11 @@ Say:
 
 > “The recipient keeps their own preferences. The shared Pod contributes an
 > explicit review playbook; it does not replace their identity.”
+
+Frame this carefully: a Shared Pod is a portable task lens, not necessarily an
+industry expert and not a replacement for professional advice. The strongest
+demo example is `senior-review`: it is concrete, low-risk, and shows how someone
+can hand you a review checklist as an inspectable file.
 
 Show the unrelated marathon task returning zero Shared Playbook memories. This
 is the proof that Memory Pod is dynamic retrieval, not a static mega-prompt.

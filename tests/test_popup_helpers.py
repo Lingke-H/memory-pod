@@ -29,16 +29,16 @@ def test_value_summary_counts_base_and_shared():
     summary = format_value_summary(memories, stack)
 
     assert "2 of your memories" in summary
-    assert "1 expert principle" in summary
+    assert "1 shared playbook item" in summary
 
 
-def test_value_summary_base_only_omits_expert():
+def test_value_summary_base_only_omits_shared_playbook():
     stack = PodStack(base_pod="jiahan")
 
     summary = format_value_summary([_mem("jiahan")], stack)
 
     assert "1 of your memories" in summary
-    assert "expert" not in summary
+    assert "shared playbook" not in summary
 
 
 def test_available_pod_choices_excludes_shared_pods_from_base_selector():

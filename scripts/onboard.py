@@ -2,7 +2,7 @@
 
     make onboard
 
-Walks a new user through: local-AI check -> starter Expert Pods -> a few
+Walks a new user through: local-AI check -> starter Shared Playbooks -> a few
 "about you" questions that become your private Base Pod.
 """
 
@@ -27,7 +27,7 @@ def _ask(question: str) -> str:
 def main() -> None:
     print("=" * 64)
     print("  MEMORY POD — Welcome")
-    print("  Create My Pod, load starter Expert Pods, then Dock them anywhere.")
+    print("  Create My Pod, load starter Shared Playbooks, then Dock them anywhere.")
     print("  Everything stays on your computer.")
     print("=" * 64)
 
@@ -39,10 +39,10 @@ def main() -> None:
         print(f"      Optional, free: install Ollama, then `ollama pull {DEFAULT_MODEL}`.")
         print("      You can skip this — everything still works without it.")
 
-    # 2/3 — Starter Expert Pods.
-    print("\n[2/3] Loading starter Expert Pods...")
-    experts = seed_experts()
-    print("      Ready: " + ", ".join(e.replace("-", " ").title() for e in experts) + " ✓")
+    # 2/3 — Starter Shared Playbooks.
+    print("\n[2/3] Loading starter Shared Playbooks...")
+    playbooks = seed_experts()
+    print("      Ready: " + ", ".join(p.replace("-", " ").title() for p in playbooks) + " ✓")
 
     # 3/3 — About you (press Enter to skip any).
     print("\n[3/3] Tell me about you (press Enter to skip any):")
@@ -58,7 +58,7 @@ def main() -> None:
     print("\n" + "=" * 64)
     print(f"  Done. Your Base Pod is '{base_pod}'. ✓")
     print(
-        "  Next: run `make popup`, pick Base '{0}' + a starter Expert Pod, "
+        "  Next: run `make popup`, pick Base '{0}' + a starter Shared Playbook, "
         "then Furnish.".format(base_pod)
     )
     print("=" * 64)
