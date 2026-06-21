@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import platform
+import threading
 import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
@@ -24,6 +25,7 @@ from memory_pod.pods import (
     pod_is_private_writable,
 )
 from memory_pod.remember import remember
+from memory_pod.rewriter import RewriteResult, polish_locally
 
 LOGGER = logging.getLogger("memory_pod.hotkey_popup")
 NO_SHARED_POD = "(None)"
@@ -50,6 +52,12 @@ def format_value_summary(memories, stack: PodStack) -> str:
             f"+ {shared_n} expert principle(s)."
         )
     return f"💡 Built from {base_n} of your memories."
+
+
+def format_polish_status(result: RewriteResult) -> str:
+    if result.used_local_ai:
+        return f"{result.note} Review before sending."
+    return result.note
 
 
 def available_pod_choices(
@@ -181,6 +189,9 @@ class HotkeyPopup:
         buttons = ttk.Frame(root)
         buttons.pack(fill="x", padx=12, pady=(2, 6))
         ttk.Button(buttons, text="Furnish", command=self._furnish).pack(side="left")
+        ttk.Button(buttons, text="Polish Locally", command=self._polish_locally).pack(
+            side="left", padx=(8, 0)
+        )
         ttk.Button(buttons, text="Copy", command=self._copy_output).pack(
             side="left", padx=8
         )
@@ -311,6 +322,27 @@ class HotkeyPopup:
             return
         pyperclip.copy(text)
         self._set_status("Copied. Review it once more before sending to any AI.")
+
+    def _polish_locally(self) -> None:
+        assert self._prompt is not None and self._output is not None
+        raw = self._last_raw or self._prompt.get("1.0", "end").strip()
+        furnished = self._output.get("1.0", "end").strip()
+        if not furnished:
+            self._set_status("Nothing to polish yet — click Furnish first.")
+            return
+
+        self._set_status("Polishing locally...")
+
+        def worker() -> None:
+            result = polish_locally(raw, furnished)
+            if self.root is not None:
+                self.root.after(0, lambda: self._apply_polish_result(result))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _apply_polish_result(self, result: RewriteResult) -> None:
+        self._set_output(result.text)
+        self._set_status(format_polish_status(result))
 
     def _remember_input(self) -> None:
         assert self._prompt is not None
