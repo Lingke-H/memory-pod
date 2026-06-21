@@ -122,7 +122,7 @@ target site (ChatGPT *or* Claude web), grant Terminal Accessibility permission,
 and keep a screen recording as a fallback. Not a browser extension.
 
 The OS loop does not learn automatically. To explicitly save the focused input
-into your private Base Pod, press `Option + Shift + Enter`. That path uses
+into your private Base Pod, press `Control + Shift + Enter`. That path uses
 `Cmd+A / Cmd+C`, writes one local memory with source `os-hotkey`, restores your
 clipboard, and does not paste or submit anything.
 

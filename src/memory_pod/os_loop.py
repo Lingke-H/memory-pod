@@ -74,7 +74,7 @@ def build_remember_fn(
 @dataclass(frozen=True)
 class HotkeyConfig:
     hotkey: str = "<alt>+<enter>"
-    remember_hotkey: str = "<alt>+<shift>+<enter>"
+    remember_hotkey: str = "<ctrl>+<shift>+<enter>"
     cut_wait_s: float = 0.18
     paste_wait_s: float = 0.12
     clipboard_timeout_s: float = 1.25
@@ -263,7 +263,7 @@ def main() -> None:
     parser.add_argument(
         "--remember-hotkey",
         default=HotkeyConfig.remember_hotkey,
-        help="Explicit remember hotkey, e.g. '<alt>+<shift>+<enter>'.",
+        help="Explicit remember hotkey, e.g. '<ctrl>+<shift>+<enter>'.",
     )
     args = parser.parse_args()
 

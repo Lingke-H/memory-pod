@@ -99,5 +99,5 @@ def test_hotkey_config_has_distinct_augment_and_remember_hotkeys():
     config = HotkeyConfig()
 
     assert config.hotkey == "<alt>+<enter>"
-    assert config.remember_hotkey == "<alt>+<shift>+<enter>"
+    assert config.remember_hotkey == "<ctrl>+<shift>+<enter>"
     assert config.hotkey != config.remember_hotkey

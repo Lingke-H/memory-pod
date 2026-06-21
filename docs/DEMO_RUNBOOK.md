@@ -76,7 +76,7 @@ keep a screen recording as a fallback; if it misbehaves live, fall back to the
 popup copy flow above.
 
 **Optional memory write-back:** while `make os-loop` is running, press
-`Option + Shift + Enter` in a focused input box to explicitly save that text
+`Control + Shift + Enter` in a focused input box to explicitly save that text
 into the private Base Pod. It copies only; it does not cut, paste, submit, or
 learn in the background.
 
