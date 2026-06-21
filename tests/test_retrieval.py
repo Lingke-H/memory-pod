@@ -70,6 +70,27 @@ def test_retrieval_filters_low_relevance_scores(tmp_path):
     assert [result.record.id for result in results] == ["strong"]
 
 
+def test_retrieval_filters_borderline_semantic_noise(tmp_path):
+    # ~0.04 is the semantic noise the real model gives unrelated prompts; it must
+    # be filtered so an unrelated task pulls zero context (regression for the
+    # "returns nothing for unrelated query" demo claim).
+    profiles_root = tmp_path / "profiles"
+    write_records(
+        "alice",
+        [_record("noise", "Unrelated marathon breakfast note.", [0.04, 0.9992])],
+        profiles_root=profiles_root,
+    )
+
+    results = retrieve(
+        "write this application",
+        profile="alice",
+        profiles_root=profiles_root,
+        embedder=_StaticEmbedder(),
+    )
+
+    assert results == []
+
+
 def test_retrieval_all_low_scores_returns_empty(tmp_path):
     profiles_root = tmp_path / "profiles"
     write_records(

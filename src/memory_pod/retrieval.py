@@ -13,7 +13,11 @@ from memory_pod.config import PROFILES_DIR
 from memory_pod.memory_store import MemoryRecord, load_records
 
 LOGGER = logging.getLogger("memory_pod.retrieval")
-DEFAULT_MIN_RELEVANCE_SCORE = 0.025
+# With the real sentence-transformer model (no lexical gate), unrelated prompts
+# still produce small non-zero cosine scores (~0.03-0.04 observed). Keep the
+# cutoff above that noise floor so an unrelated task pulls nothing, while staying
+# well below genuine matches (~0.08+ in practice).
+DEFAULT_MIN_RELEVANCE_SCORE = 0.05
 
 
 @dataclass(frozen=True)
