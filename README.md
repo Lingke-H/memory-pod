@@ -38,10 +38,11 @@ make onboard
 ```
 
 Onboarding asks a few "about you" questions, writes the answers into your
-private Base Pod, and seeds replaceable starter Expert Pods such as resume,
-coding, email, marketing, academic writing, and cover letters. These starter
-Pods are demos of the `.mpod` sharing model; a real expert can replace them by
-exporting their own Shared Pod file.
+private Base Pod, and seeds replaceable starter Expert Pods such as lawyer,
+accountant, financial advisor, management consultant, marketing strategist, and
+HR specialist. These starter Pods carry general professional best-practices (not
+licensed advice) and are demos of the `.mpod` sharing model; a real expert can
+replace them by exporting their own Shared Pod file.
 
 If you only want to refresh the starter Expert Pods later:
 
@@ -120,6 +121,11 @@ It does `Cmd+A / Cmd+X`, furnishes the text, and pastes the result back. It
 **never submits** — you review it and press Enter yourself. Use it on **one**
 target site (ChatGPT *or* Claude web), grant Terminal Accessibility permission,
 and keep a screen recording as a fallback. Not a browser extension.
+
+To switch which Pods the hotkey uses **without restarting the daemon**, open the
+popup (`make popup`), pick a Base/Shared Pod, and click **Confirm → Hotkey**. The
+running OS loop picks up the new selection on the next `Option + Enter`. (Pass
+`--no-follow-active-dock` to pin the launch pods instead.)
 
 The OS loop does not learn automatically. To explicitly save the focused input
 into your private Base Pod, press `Control + Shift + Enter`. That path uses

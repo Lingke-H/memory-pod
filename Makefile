@@ -45,9 +45,12 @@ popup:
 	PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src $(PYTHON) -m memory_pod.hotkey_popup
 
 # Tier 2 in-place injection into ONE AI site (pairs with `make demo-setup`).
-# Pastes the furnished prompt into the focused input box; never auto-submits.
+# Pastes the polished furnished prompt into the focused input box; never auto-submits.
+# Override pods with `make os-loop BASE_POD=jiahan SHARED_POD=senior-review`.
+BASE_POD ?= eddy
+SHARED_POD ?= lawyer
 os-loop:
-	PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src $(PYTHON) -m memory_pod.os_loop --base-pod jiahan --shared-pod senior-review
+	PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src $(PYTHON) -m memory_pod.os_loop --base-pod $(BASE_POD) --shared-pod $(SHARED_POD)
 
 clean:
 	rm -rf .pytest_cache

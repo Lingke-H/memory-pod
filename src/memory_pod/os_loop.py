@@ -19,10 +19,12 @@ from typing import Callable
 from pynput import keyboard
 import pyperclip
 
+from memory_pod.active_dock import read_active_dock, write_active_dock
 from memory_pod.augment import augment, augment_for_profile, augment_for_stack
-from memory_pod.config import DEFAULT_PROFILE, PROFILES_DIR
+from memory_pod.config import DEFAULT_PROFILE, MEMORY_POD_HOME, PROFILES_DIR
 from memory_pod.pods import PodStack
 from memory_pod.remember import remember
+from memory_pod.rewriter import polish_locally
 
 LOGGER = logging.getLogger("memory_pod.os_loop")
 
@@ -31,21 +33,55 @@ def build_augment_fn(
     base_pod: str = DEFAULT_PROFILE,
     shared_pod: str | None = None,
     pods_root: Path = PROFILES_DIR,
+    polish: bool = True,
+    follow_active_dock: bool = True,
+    home: Path = MEMORY_POD_HOME,
 ) -> Callable[[str], str]:
     """Furnish raw input from a Base Pod (+ optional Shared Pod).
 
     Returns a ``str -> str`` callable that the hotkey loop pastes back in place.
     Keeps the OS layer behind the public augment contract — it never touches the
     store or retrieval internals directly.
+
+    When ``polish`` is True, the furnished prompt is passed through the same local
+    Ollama polishing the popup uses so Option+Enter pastes one clean, copy-ready
+    prompt instead of the raw ``[Hidden Context]`` block. ``polish_locally`` falls
+    back to the furnished prompt when Ollama is unavailable, so this never blocks.
+
+    When ``follow_active_dock`` is True, the active dock file (written by the popup's
+    "Confirm → Hotkey" button) is re-read on every call so the hotkey follows the
+    popup's pod selection without restarting. A missing/corrupt file or a bad pod
+    falls back to the launch ``base_pod``/``shared_pod``.
     """
 
+    def _resolve_pods() -> tuple[str, str | None]:
+        if not follow_active_dock:
+            return base_pod, shared_pod
+        dock = read_active_dock(home)
+        if dock is None:
+            return base_pod, shared_pod
+        if (dock.base_pod, dock.shared_pod) != (base_pod, shared_pod):
+            LOGGER.info(
+                "Hotkey pod → %s%s (via popup).",
+                dock.base_pod,
+                f" + {dock.shared_pod}" if dock.shared_pod else "",
+            )
+        return dock.base_pod, dock.shared_pod
+
     def _augment(raw_prompt: str) -> str:
-        if shared_pod:
-            stack = PodStack(base_pod=base_pod, shared_pod=shared_pod)
-            return augment_for_stack(raw_prompt, stack, pods_root=pods_root).furnished_prompt
-        return augment_for_profile(
-            raw_prompt, profile=base_pod, profiles_root=pods_root
-        ).furnished_prompt
+        active_base, active_shared = _resolve_pods()
+        if active_shared:
+            stack = PodStack(base_pod=active_base, shared_pod=active_shared)
+            furnished = augment_for_stack(
+                raw_prompt, stack, pods_root=pods_root
+            ).furnished_prompt
+        else:
+            furnished = augment_for_profile(
+                raw_prompt, profile=active_base, profiles_root=pods_root
+            ).furnished_prompt
+        if polish:
+            return polish_locally(raw_prompt, furnished).text
+        return furnished
 
     return _augment
 
@@ -265,6 +301,21 @@ def main() -> None:
         default=HotkeyConfig.remember_hotkey,
         help="Explicit remember hotkey, e.g. '<ctrl>+<shift>+<enter>'.",
     )
+    parser.add_argument(
+        "--polish",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Polish the furnished prompt with local Ollama before pasting "
+        "(falls back to the furnished prompt if Ollama is unavailable). "
+        "Use --no-polish to paste the raw furnished prompt.",
+    )
+    parser.add_argument(
+        "--follow-active-dock",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Let the popup's 'Confirm → Hotkey' button repoint this daemon's pods "
+        "without a restart. Use --no-follow-active-dock to pin the launch pods.",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -283,8 +334,25 @@ def main() -> None:
         "without cutting, pasting, or submitting.",
         args.remember_hotkey,
     )
+    if args.polish:
+        LOGGER.info(
+            "Polishing locally with Ollama before paste — expect a short delay; "
+            "falls back to the furnished prompt if Ollama is unavailable."
+        )
+    if args.follow_active_dock:
+        # Sync the active dock to the launch pods so a stale file can't silently
+        # override --base-pod; the popup's Confirm button updates it from here.
+        write_active_dock(args.base_pod, args.shared_pod)
+        LOGGER.info(
+            "Following the popup's 'Confirm → Hotkey' button — switch pods live, no restart."
+        )
 
-    augment_fn = build_augment_fn(base_pod=args.base_pod, shared_pod=args.shared_pod)
+    augment_fn = build_augment_fn(
+        base_pod=args.base_pod,
+        shared_pod=args.shared_pod,
+        polish=args.polish,
+        follow_active_dock=args.follow_active_dock,
+    )
     remember_fn = build_remember_fn(base_pod=args.base_pod)
     # submit_after_paste stays False: the constitution forbids automatic submission.
     config = HotkeyConfig(hotkey=args.hotkey, remember_hotkey=args.remember_hotkey)
