@@ -116,6 +116,11 @@ make os-loop
 PYTHONPATH=src python -m memory_pod.os_loop --base-pod jiahan --shared-pod senior-review
 ```
 
+The default `make os-loop` target uses the frozen demo Pods from `make
+demo-setup` (`jiahan + senior-review`) so it works reliably during a live demo.
+Use `BASE_POD=... SHARED_POD=...` or the popup's **Confirm → Hotkey** button to
+switch to your onboarded Base Pod and an industry Expert Pod.
+
 Press the hotkey (`Option + Enter`) while your cursor is in the AI's text box.
 It does `Cmd+A / Cmd+X`, furnishes the text, and pastes the result back. It
 **never submits** — you review it and press Enter yourself. Use it on **one**
