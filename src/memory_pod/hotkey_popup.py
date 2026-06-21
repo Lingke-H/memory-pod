@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import platform
 import tkinter as tk
@@ -25,6 +26,29 @@ from memory_pod.remember import remember
 LOGGER = logging.getLogger("memory_pod.hotkey_popup")
 NO_SHARED_POD = "(None)"
 
+# A stable little "face" per Pod so the Dock reads as people/experts, not ids.
+_POD_FACES = ("🧑‍💻", "⚙️", "📦", "⚖️", "📣", "🧠", "📚", "🎯", "🛠️", "🔬", "✍️", "🚀")
+
+
+def pod_face(pod_id: str) -> str:
+    """Deterministic emoji for a Pod id (same id -> same face, no stored state)."""
+    if not pod_id:
+        return "📦"
+    digest = hashlib.md5(pod_id.encode("utf-8")).digest()
+    return _POD_FACES[digest[0] % len(_POD_FACES)]
+
+
+def format_value_summary(memories, stack: PodStack) -> str:
+    """One-line 'why this prompt is better' summary of what got used."""
+    base_n = sum(1 for m in memories if m.pod_id == stack.base_pod)
+    if stack.shared_pod:
+        shared_n = sum(1 for m in memories if m.pod_id == stack.shared_pod)
+        return (
+            f"💡 Built from {base_n} of your memories "
+            f"+ {shared_n} expert principle(s)."
+        )
+    return f"💡 Built from {base_n} of your memories."
+
 
 class HotkeyPopup:
     def __init__(
@@ -45,6 +69,7 @@ class HotkeyPopup:
         self._base_var: tk.StringVar | None = None
         self._shared_var: tk.StringVar | None = None
         self._status: tk.StringVar | None = None
+        self._value: tk.StringVar | None = None
         self._memory_vars: list[tuple[tk.BooleanVar, object]] = []
         self._last_raw = ""
         self._last_stack: PodStack | None = None
@@ -144,6 +169,10 @@ class HotkeyPopup:
         )
         ttk.Button(buttons, text="Close", command=self._hide).pack(side="right")
 
+        self._value = tk.StringVar()
+        ttk.Label(root, textvariable=self._value, anchor="w").pack(
+            fill="x", padx=12, pady=(0, 2)
+        )
         self._status = tk.StringVar()
         ttk.Label(root, textvariable=self._status, anchor="w").pack(
             fill="x", padx=12, pady=(0, 12)
@@ -187,9 +216,9 @@ class HotkeyPopup:
         if self._status is None:
             return
         stack = self._current_stack()
-        label = stack.base_pod
+        label = f"{pod_face(stack.base_pod)} {stack.base_pod}"
         if stack.shared_pod:
-            label += f" + {stack.shared_pod}"
+            label += f" + {pod_face(stack.shared_pod)} {stack.shared_pod}"
         self._status.set(f"Docked: {label}")
 
     def _furnish(self) -> None:
@@ -205,6 +234,7 @@ class HotkeyPopup:
         self._last_stack = stack
         self._set_output(result.furnished_prompt)
         self._render_memories(result.memories)
+        self._set_value(result.memories, stack)
         self._set_status(
             f"Furnished with {len(result.memories)} selected context item(s)."
         )
@@ -225,7 +255,7 @@ class HotkeyPopup:
             snippet = " ".join(result.record.text.split())
             if len(snippet) > 120:
                 snippet = snippet[:117] + "..."
-            label = f"[{result.pod_id}] {result.score:.3f}  {snippet}"
+            label = f"{pod_face(result.pod_id)} [{result.pod_id}] {result.score:.3f}  {snippet}"
             ttk.Checkbutton(
                 self._memory_rows,
                 text=label,
@@ -245,6 +275,7 @@ class HotkeyPopup:
             pods_root=self.pods_root,
         )
         self._set_output(furnished)
+        self._set_value(selected, self._last_stack)
         self._set_status(f"Using {len(selected)} approved context item(s).")
 
     def _copy_output(self) -> None:
@@ -373,6 +404,10 @@ class HotkeyPopup:
         assert self._output is not None
         self._output.delete("1.0", "end")
         self._output.insert("1.0", text)
+
+    def _set_value(self, memories, stack: PodStack) -> None:
+        if self._value is not None:
+            self._value.set(format_value_summary(memories, stack))
 
     def _set_status(self, text: str) -> None:
         if self._status is not None:
