@@ -262,10 +262,7 @@ def import_pod(
 
     records = []
     for item, vector in zip(portable.records, vectors, strict=True):
-        source_label = item.get("source_label")
         source = f"mpod:{portable.manifest.id}"
-        if source_label:
-            source = f"{source}:{source_label}"
         records.append(
             MemoryRecord(
                 id=item["id"],
@@ -327,6 +324,22 @@ def pod_is_writable(pod_id: str, pods_root: Path = PODS_DIR) -> bool:
     return manifest is None or not manifest.read_only
 
 
+def pod_is_private_writable(pod_id: str, pods_root: Path = PODS_DIR) -> bool:
+    try:
+        manifest = get_pod_manifest(pod_id, pods_root)
+    except (OSError, KeyError, TypeError, ValueError):
+        return False
+    return manifest is None or (manifest.kind == "private" and not manifest.read_only)
+
+
+def require_private_writable_pod(pod_id: str, pods_root: Path = PODS_DIR) -> None:
+    if not pod_is_private_writable(pod_id, pods_root):
+        raise PermissionError(
+            f"Pod '{pod_id}' must be a private writable Base Pod for this action; "
+            "Shared or read-only Pods cannot be used as write targets."
+        )
+
+
 def _require_manifest(pod_id: str, pods_root: Path) -> PodManifest:
     manifest = get_pod_manifest(pod_id, pods_root)
     if manifest is None:
@@ -345,9 +358,6 @@ def _write_manifest(manifest: PodManifest, pods_root: Path) -> Path:
 
 
 def _portable_record(record: MemoryRecord) -> dict:
-    source_label = None
-    if record.source:
-        source_label = Path(record.source).name
     return {
         "id": record.id,
         "type": record.type,
@@ -355,7 +365,6 @@ def _portable_record(record: MemoryRecord) -> dict:
         "tags": list(record.tags),
         "weight": record.weight,
         "created_at": record.created_at,
-        "source_label": source_label,
     }
 
 
@@ -376,9 +385,6 @@ def _validate_portable_record(payload: object) -> dict:
     weight = float(payload.get("weight", 1.0))
     if not np.isfinite(weight):
         raise ValueError("Pod record weight must be finite.")
-    source_label = payload.get("source_label")
-    if source_label is not None:
-        source_label = Path(str(source_label)).name
     return {
         "id": record_id,
         "type": str(payload.get("type", "note_chunk")),
@@ -386,7 +392,6 @@ def _validate_portable_record(payload: object) -> dict:
         "tags": [str(tag) for tag in tags],
         "weight": weight,
         "created_at": str(payload.get("created_at", datetime.now(UTC).isoformat())),
-        "source_label": source_label,
     }
 
 

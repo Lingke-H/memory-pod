@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import tempfile
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -69,7 +70,18 @@ def write_records(
     path = store_path(profile, profiles_root)
     path.parent.mkdir(parents=True, exist_ok=True)
     lines = [json.dumps(record.to_json(), ensure_ascii=False) for record in records]
-    path.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
+    payload = "\n".join(lines) + ("\n" if lines else "")
+    with tempfile.NamedTemporaryFile(
+        "w",
+        encoding="utf-8",
+        dir=path.parent,
+        prefix=f".{path.name}.",
+        suffix=".tmp",
+        delete=False,
+    ) as temp_file:
+        temp_file.write(payload)
+        temp_path = Path(temp_file.name)
+    temp_path.replace(path)
     return path
 
 
@@ -82,3 +94,21 @@ def upsert_records(
     for record in new_records:
         existing[record.id] = record
     return write_records(profile, existing.values(), profiles_root)
+
+
+def replace_records_for_sources(
+    profile: str,
+    sources: set[str],
+    new_records: Iterable[MemoryRecord],
+    profiles_root: Path = PROFILES_DIR,
+) -> Path:
+    replacement = list(new_records)
+    existing = []
+    for record in load_records(profile, profiles_root):
+        if record.type == "manual_memory" or record.source == "manual":
+            existing.append(record)
+            continue
+        if record.source in sources:
+            continue
+        existing.append(record)
+    return write_records(profile, [*existing, *replacement], profiles_root)

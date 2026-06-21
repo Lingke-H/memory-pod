@@ -1,5 +1,6 @@
 import memory_pod.cli as cli
 from memory_pod.augment import AugmentResult
+from memory_pod.pods import PortablePod
 from memory_pod.pods import PodManifest
 
 
@@ -97,3 +98,41 @@ def test_augment_command_uses_stack_when_shared_pod_is_docked(monkeypatch):
 
     assert captured["prompt"] == "Review this API"
     assert captured["stack"].active_pods == ("jiahan", "senior-review")
+
+
+def test_pod_inspect_command_prints_tags_and_unverified_author_note(monkeypatch, capsys):
+    monkeypatch.setattr(
+        cli,
+        "inspect_pod",
+        lambda path: PortablePod(
+            manifest=PodManifest(
+                id="senior-review",
+                name="Senior Review",
+                kind="shared",
+                author="Alice",
+                purpose="API review",
+            ),
+            records=[
+                {
+                    "id": "one",
+                    "type": "principle",
+                    "text": "Review API failure modes.",
+                    "tags": ["api", "review"],
+                    "weight": 1.0,
+                    "created_at": "2026-01-01T00:00:00+00:00",
+                }
+            ],
+            content_hash="abc",
+            source_path=__file__,
+        ),
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        ["memory-pod", "pod", "inspect", "senior-review.mpod"],
+    )
+
+    cli.main()
+
+    output = capsys.readouterr().out
+    assert "Author: Alice (not verified)" in output
+    assert "Tags: api, review" in output

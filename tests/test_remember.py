@@ -3,6 +3,7 @@ import pytest
 from memory_pod.augment import augment_for_profile
 from memory_pod.embeddings import HashingEmbedder
 from memory_pod.memory_store import load_records
+from memory_pod.pods import create_pod
 from memory_pod.remember import make_memory_id, remember
 
 
@@ -68,3 +69,15 @@ def test_remember_uses_stable_id_to_prevent_unbounded_duplicates(tmp_path):
 def test_remember_rejects_empty_text(tmp_path):
     with pytest.raises(ValueError, match="empty text"):
         remember("   ", profile="alice", profiles_root=tmp_path / "profiles")
+
+
+def test_remember_rejects_local_shared_pod_as_private_write_target(tmp_path):
+    pods_root = tmp_path / "pods"
+    create_pod("Senior Review", kind="shared", pod_id="senior-review", pods_root=pods_root)
+
+    with pytest.raises(PermissionError, match="private writable Base Pod"):
+        remember(
+            "This should stay in my private memory.",
+            profile="senior-review",
+            profiles_root=pods_root,
+        )

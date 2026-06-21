@@ -179,12 +179,14 @@ def _run_pod_command(args) -> None:
         portable = inspect_pod(args.path)
         pod = portable.manifest
         print(f"Pod: {pod.name} ({pod.id})")
-        print(f"Author: {pod.author or 'Unspecified (not verified)'}")
+        print(f"Author: {pod.author or 'Unspecified'} (not verified)")
         print(f"Purpose: {pod.purpose or 'Unspecified'}")
         print(f"Version: {pod.version}")
         print(f"Records: {len(portable.records)}")
         for index, record in enumerate(portable.records, start=1):
+            tags = ", ".join(record["tags"]) if record["tags"] else "none"
             print(f"{index}. [{record['type']}] {record['text']}")
+            print(f"   Tags: {tags}")
         return
 
     if args.pod_command == "import":

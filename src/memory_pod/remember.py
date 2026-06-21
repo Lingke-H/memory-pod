@@ -9,7 +9,7 @@ from pathlib import Path
 from memory_pod.config import DEFAULT_PROFILE, PROFILES_DIR
 from memory_pod.embeddings import get_embedder
 from memory_pod.memory_store import MemoryRecord, upsert_records
-from memory_pod.pods import pod_is_writable
+from memory_pod.pods import require_private_writable_pod
 
 
 def remember(
@@ -24,8 +24,7 @@ def remember(
     cleaned_text = text.strip()
     if not cleaned_text:
         raise ValueError("Cannot remember empty text.")
-    if not pod_is_writable(profile, profiles_root):
-        raise PermissionError(f"Pod '{profile}' is read-only.")
+    require_private_writable_pod(profile, profiles_root)
 
     local_embedder = get_embedder()
     vector = local_embedder.embed([cleaned_text])[0]

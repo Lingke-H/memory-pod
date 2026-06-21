@@ -1,4 +1,4 @@
-.PHONY: setup check test compile seed demo demo-reingest demo-learn pod-demo judge popup clean
+.PHONY: setup check test compile seed demo demo-reingest demo-learn pod-demo demo-setup judge popup clean
 
 PYTHON ?= python
 
@@ -28,6 +28,9 @@ demo-learn:
 
 pod-demo:
 	PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src $(PYTHON) scripts/pod_demo.py
+
+demo-setup:
+	PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src $(PYTHON) scripts/seed_pod_demo.py
 
 judge:
 	PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src $(PYTHON) scripts/judge_demo.py

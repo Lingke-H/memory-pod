@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from memory_pod.config import DEFAULT_PROFILE, PROFILES_DIR
-from memory_pod.pods import PodStack, get_pod_manifest
+from memory_pod.pods import PodStack, get_pod_manifest, require_private_writable_pod
 from memory_pod.prompt_assembly import assemble_prompt, assemble_stack_prompt, format_debug
 from memory_pod.retrieval import RetrievalResult, retrieve
 
@@ -57,9 +57,7 @@ def augment_for_stack(
     top_k: int = 5,
     pods_root: Path = PROFILES_DIR,
 ) -> AugmentResult:
-    base_manifest = get_pod_manifest(stack.base_pod, pods_root)
-    if base_manifest is not None and base_manifest.read_only:
-        raise PermissionError("The Base Pod must be writable.")
+    require_private_writable_pod(stack.base_pod, pods_root)
     if stack.shared_pod:
         shared_manifest = get_pod_manifest(stack.shared_pod, pods_root)
         if shared_manifest is None:
