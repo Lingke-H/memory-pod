@@ -33,3 +33,20 @@ def test_augment_returns_raw_prompt_when_retrieval_filters_everything(tmp_path, 
 
     assert result.memories == []
     assert result.furnished_prompt == "hello"
+
+
+def test_augment_preserves_blank_prompt_as_empty_state(tmp_path):
+    raw_prompt = "  \n "
+
+    result = augment_for_profile(raw_prompt, profile="alice", profiles_root=tmp_path)
+
+    assert result.raw_prompt == raw_prompt
+    assert result.memories == []
+    assert result.furnished_prompt == raw_prompt
+
+
+def test_augment_missing_profile_returns_raw_prompt(tmp_path):
+    result = augment_for_profile("hello", profile="missing", profiles_root=tmp_path)
+
+    assert result.memories == []
+    assert result.furnished_prompt == "hello"
