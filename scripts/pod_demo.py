@@ -86,7 +86,7 @@ def main() -> None:
         )
         print("BASE ONLY")
         print(base_only.debug_text())
-        print("\nBASE + SHARED PLAYBOOK")
+        print("\nBASE + SHARED POD")
         print(docked.debug_text())
 
         unrelated = augment_for_stack(
@@ -96,7 +96,7 @@ def main() -> None:
         )
         shared_hits = [item for item in unrelated.memories if item.pod_id == "senior-review"]
         _banner("ACT 3 — SELECTIVE, NOT A MEGA-PROMPT", "An unrelated task stays clean")
-        print(f"Shared playbook memories injected: {len(shared_hits)}")
+        print(f"Shared Pod context injected: {len(shared_hits)}")
         print(unrelated.furnished_prompt)
 
 
