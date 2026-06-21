@@ -82,10 +82,11 @@ def seed_experts(
     pods_root: Path = PODS_DIR,
     embedder=None,
 ) -> list[str]:
-    """Import the bundled expert playbooks as read-to-dock Shared Pods.
+    """Import bundled starter Expert Pods as ready-to-dock Shared Pods.
 
-    Idempotent: existing expert Pods are re-ingested (source reconciliation keeps
-    them current) rather than recreated. Returns the seeded pod ids.
+    Idempotent: existing starter Expert Pods are re-ingested (source
+    reconciliation keeps them current) rather than recreated. Returns the seeded
+    pod ids.
     """
     seeded: list[str] = []
     for playbook in sorted(experts_dir.glob("*.md")):

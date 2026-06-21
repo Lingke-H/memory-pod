@@ -19,6 +19,11 @@ inside a temporary directory. `make demo-setup` seeds the persistent local Pod
 store used by the popup, so the live Dock can see Base `jiahan` and Shared
 `senior-review`.
 
+For a first-run product walkthrough rather than the frozen judge script, run
+`make onboard`. It creates a private My Pod from a few "about you" answers and
+loads starter Expert Pods. Keep this as the answer to "where does the user's
+memory come from?" without changing the main three-minute demo path.
+
 ## Three-Minute Story
 
 ### Act 1 — Own and Carry

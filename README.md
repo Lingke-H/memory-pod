@@ -29,6 +29,26 @@ can be copied non-destructively with:
 memory-pod pod migrate-legacy
 ```
 
+## First Run
+
+Create your private My Pod and load the starter Expert Pods:
+
+```bash
+make onboard
+```
+
+Onboarding asks a few "about you" questions, writes the answers into your
+private Base Pod, and seeds replaceable starter Expert Pods such as resume,
+coding, email, marketing, academic writing, and cover letters. These starter
+Pods are demos of the `.mpod` sharing model; a real expert can replace them by
+exporting their own Shared Pod file.
+
+If you only want to refresh the starter Expert Pods later:
+
+```bash
+make seed-experts
+```
+
 ## Create Pods
 
 Create a private Base Pod and ingest local notes:
@@ -102,6 +122,7 @@ and keep a screen recording as a fallback. Not a browser extension.
 ## Demos
 
 ```bash
+make onboard       # First-run: create My Pod + starter Expert Pods
 make pod-demo      # Own -> Carry -> Dock -> selective retrieval
 make demo          # Same prompt, different private memories
 make demo-learn    # Local write-back

@@ -2,7 +2,7 @@
 
     make onboard
 
-Walks a new user through: local-AI check -> load the 6 experts -> a few
+Walks a new user through: local-AI check -> starter Expert Pods -> a few
 "about you" questions that become your private Base Pod.
 """
 
@@ -27,7 +27,7 @@ def _ask(question: str) -> str:
 def main() -> None:
     print("=" * 64)
     print("  MEMORY POD — Welcome")
-    print("  Furnish your prompts with your memory + an expert.")
+    print("  Create My Pod, load starter Expert Pods, then Dock them anywhere.")
     print("  Everything stays on your computer.")
     print("=" * 64)
 
@@ -39,8 +39,8 @@ def main() -> None:
         print(f"      Optional, free: install Ollama, then `ollama pull {DEFAULT_MODEL}`.")
         print("      You can skip this — everything still works without it.")
 
-    # 2/3 — Experts.
-    print("\n[2/3] Loading expert playbooks...")
+    # 2/3 — Starter Expert Pods.
+    print("\n[2/3] Loading starter Expert Pods...")
     experts = seed_experts()
     print("      Ready: " + ", ".join(e.replace("-", " ").title() for e in experts) + " ✓")
 
@@ -57,7 +57,10 @@ def main() -> None:
 
     print("\n" + "=" * 64)
     print(f"  Done. Your Base Pod is '{base_pod}'. ✓")
-    print("  Next: run `make popup`, pick Base '{0}' + an expert, then Furnish.".format(base_pod))
+    print(
+        "  Next: run `make popup`, pick Base '{0}' + a starter Expert Pod, "
+        "then Furnish.".format(base_pod)
+    )
     print("=" * 64)
 
 
