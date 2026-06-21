@@ -15,6 +15,14 @@ from pynput import keyboard
 
 from memory_pod.augment import augment_for_stack, furnish_selected
 from memory_pod.config import DEFAULT_PROFILE, PROFILES_DIR
+from memory_pod.llm import ollama_available
+from memory_pod.onboarding import (
+    ABOUT_YOU_QUESTIONS,
+    complete_about_you,
+    is_onboarded,
+    mark_onboarded,
+    seed_experts,
+)
 from memory_pod.pods import (
     PodManifest,
     PodStack,
@@ -99,6 +107,7 @@ class HotkeyPopup:
         self._memory_vars: list[tuple[tk.BooleanVar, object]] = []
         self._last_raw = ""
         self._last_stack: PodStack | None = None
+        self._wizard_open = False
 
     def start(self) -> None:
         self._warn_for_macos_permissions()
@@ -127,10 +136,126 @@ class HotkeyPopup:
         self.root.attributes("-topmost", True)
         if self._prompt is not None:
             self._prompt.focus_force()
+        self._maybe_onboard()
 
     def _hide(self) -> None:
         if self.root is not None:
             self.root.withdraw()
+
+    # ----- First-run onboarding wizard -------------------------------------
+
+    def _maybe_onboard(self) -> None:
+        if self._wizard_open or is_onboarded(self.pods_root.parent):
+            return
+        self._open_onboarding_wizard()
+
+    def _open_onboarding_wizard(self) -> None:
+        assert self.root is not None
+        self._wizard_open = True
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Welcome to Memory Pod")
+        dialog.geometry("580x600")
+        dialog.transient(self.root)
+        dialog.grab_set()
+
+        ttk.Label(dialog, text="Welcome to Memory Pod", font=("", 16, "bold")).pack(
+            anchor="w", padx=16, pady=(16, 2)
+        )
+        ttk.Label(
+            dialog,
+            text="Furnish your prompts with your memory + an expert.\n"
+            "Everything stays on your computer.",
+            justify="left",
+        ).pack(anchor="w", padx=16)
+
+        ai = "found ✓" if ollama_available() else "not found (optional — install Ollama for AI polish)"
+        ttk.Label(dialog, text=f"Local AI: {ai}").pack(anchor="w", padx=16, pady=(10, 0))
+
+        experts_var = tk.StringVar(value="Loading starter experts…")
+        ttk.Label(dialog, textvariable=experts_var).pack(anchor="w", padx=16, pady=(4, 8))
+
+        ttk.Label(
+            dialog, text="Tell me about you (optional — skip any):", font=("", 12, "bold")
+        ).pack(anchor="w", padx=16, pady=(8, 4))
+        entries: dict[str, tk.StringVar] = {}
+        for key, question in ABOUT_YOU_QUESTIONS:
+            ttk.Label(dialog, text=question).pack(anchor="w", padx=16)
+            var = tk.StringVar()
+            ttk.Entry(dialog, textvariable=var, width=56).pack(anchor="w", padx=16, pady=(0, 6))
+            entries[key] = var
+
+        status = tk.StringVar(value="")
+        ttk.Label(dialog, textvariable=status, anchor="w").pack(fill="x", padx=16, pady=(4, 0))
+
+        buttons = ttk.Frame(dialog)
+        buttons.pack(fill="x", padx=16, pady=12)
+        finish_btn = ttk.Button(buttons, text="Finish")
+        finish_btn.pack(side="right")
+        ttk.Button(
+            buttons,
+            text="Skip",
+            command=lambda: self._finish_onboarding(dialog, {}, status, finish_btn),
+        ).pack(side="right", padx=8)
+        finish_btn.configure(
+            command=lambda: self._finish_onboarding(
+                dialog, {key: var.get() for key, var in entries.items()}, status, finish_btn
+            )
+        )
+
+        # Seed the starter experts in the background so the window opens instantly.
+        def seed_worker() -> None:
+            try:
+                ids = seed_experts(pods_root=self.pods_root)
+                msg = "Experts ready: " + ", ".join(
+                    i.replace("-", " ").title() for i in ids
+                ) + " ✓"
+            except Exception as exc:  # noqa: BLE001 - surface any seed failure in the UI
+                msg = f"Experts: could not load ({exc})"
+            if self.root is not None:
+                self.root.after(0, lambda: experts_var.set(msg))
+
+        threading.Thread(target=seed_worker, daemon=True).start()
+
+    def _finish_onboarding(self, dialog, answers, status, finish_btn) -> None:
+        finish_btn.configure(state="disabled")
+        status.set("Setting up…")
+
+        def worker() -> None:
+            base_pod = None
+            try:
+                if answers.get("name", "").strip():
+                    base_pod = complete_about_you(
+                        answers.get("name", ""),
+                        answers.get("role", ""),
+                        answers.get("working_on", ""),
+                        answers.get("style", ""),
+                        pods_root=self.pods_root,
+                    )
+                mark_onboarded(self.pods_root.parent)
+            except Exception as exc:  # noqa: BLE001 - surface setup failure in the UI
+                if self.root is not None:
+                    self.root.after(
+                        0,
+                        lambda: (status.set(f"Setup error: {exc}"), finish_btn.configure(state="normal")),
+                    )
+                return
+            if self.root is not None:
+                self.root.after(0, lambda: self._complete_onboarding(dialog, base_pod))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _complete_onboarding(self, dialog, base_pod) -> None:
+        self._wizard_open = False
+        if base_pod and self._base_var is not None:
+            self._refresh_pod_choices()
+            self._base_var.set(base_pod)
+            self._set_dock_status()
+            self._set_status(f"Welcome! Your Base Pod '{base_pod}' is ready.")
+        try:
+            dialog.grab_release()
+        except tk.TclError:
+            pass
+        dialog.destroy()
 
     def _build_ui(self, root: tk.Tk) -> None:
         root.title("Memory Pod — Pod Dock")
