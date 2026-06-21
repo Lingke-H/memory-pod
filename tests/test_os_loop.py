@@ -43,7 +43,7 @@ def test_build_augment_fn_base_only(tmp_path, monkeypatch):
     )(PROMPT)
 
     assert "[Hidden Context]" in furnished
-    assert "Docked Shared Playbook" not in furnished
+    assert "Docked Shared Pod Context" not in furnished
 
 
 def test_build_augment_fn_docks_shared_pod(tmp_path, monkeypatch):
@@ -59,7 +59,7 @@ def test_build_augment_fn_docks_shared_pod(tmp_path, monkeypatch):
     )(PROMPT)
 
     assert "Private User Context" in furnished
-    assert "Docked Shared Playbook" in furnished
+    assert "Docked Shared Pod Context" in furnished
 
 
 def test_build_augment_fn_polishes_when_enabled(tmp_path, monkeypatch):

@@ -69,7 +69,7 @@ The primary demo must prove all four claims:
 2. **Carry:** a Shared Pod exports as a readable `.mpod` with no vectors or
    private paths.
 3. **Dock:** the recipient imports and retrieves it locally beside their Base.
-4. **Selective:** unrelated tasks inject no Shared Playbook context, and the
+4. **Selective:** unrelated tasks inject no Shared Pod context, and the
    user can deselect individual memories before copying.
 
 The furnished prompt can then be pasted into two different AI products to show

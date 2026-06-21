@@ -19,10 +19,10 @@ def test_stack_retrieves_base_and_shared_context(tmp_path, monkeypatch):
     assert result.active_pods == ("jiahan", "senior-review")
     assert {memory.pod_id for memory in result.memories} == {"jiahan", "senior-review"}
     assert "Private User Context (Jiahan)" in result.furnished_prompt
-    assert "Docked Shared Playbook (Senior Review)" in result.furnished_prompt
+    assert "Docked Shared Pod Context (Senior Review)" in result.furnished_prompt
 
 
-def test_shared_playbook_is_not_injected_for_unrelated_query(tmp_path, monkeypatch):
+def test_shared_pod_context_is_not_injected_for_unrelated_query(tmp_path, monkeypatch):
     _seed_stack(tmp_path)
     monkeypatch.setattr("memory_pod.retrieval.get_embedder", lambda: HashingEmbedder())
 
@@ -33,7 +33,7 @@ def test_shared_playbook_is_not_injected_for_unrelated_query(tmp_path, monkeypat
     )
 
     assert all(memory.pod_id != "senior-review" for memory in result.memories)
-    assert "Docked Shared Playbook" not in result.furnished_prompt
+    assert "Docked Shared Pod Context" not in result.furnished_prompt
 
 
 def test_furnish_selected_removes_unchecked_memory(tmp_path, monkeypatch):
@@ -51,7 +51,7 @@ def test_furnish_selected_removes_unchecked_memory(tmp_path, monkeypatch):
     )
 
     assert "Private User Context" in rebuilt
-    assert "Docked Shared Playbook" not in rebuilt
+    assert "Docked Shared Pod Context" not in rebuilt
     assert "failure modes" not in rebuilt
 
 
