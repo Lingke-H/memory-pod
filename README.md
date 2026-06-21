@@ -31,20 +31,21 @@ memory-pod pod migrate-legacy
 
 ## First Run
 
-Create your private My Pod and load the starter Expert Pods:
+Create your private My Pod and load the starter Shared Pods:
 
 ```bash
 make onboard
 ```
 
 Onboarding asks a few "about you" questions, writes the answers into your
-private Base Pod, and seeds replaceable starter Expert Pods such as lawyer,
-accountant, financial advisor, management consultant, marketing strategist, and
-HR specialist. These starter Pods carry general professional best-practices (not
-licensed advice) and are demos of the `.mpod` sharing model; a real expert can
-replace them by exporting their own Shared Pod file.
+private Base Pod, and seeds replaceable starter Shared Pods. A Shared Pod is not
+necessarily an "industry expert"; it is a portable memory/context pod that can
+carry an explicit task lens, team convention, review checklist, or playbook to
+Dock beside your private memory. The bundled starter Pods carry general
+best-practices, not licensed advice, and mainly demonstrate the `.mpod` sharing
+model.
 
-If you only want to refresh the starter Expert Pods later:
+If you only want to refresh the starter Shared Pods later:
 
 ```bash
 make seed-experts
@@ -59,7 +60,7 @@ memory-pod pod create --name "Jiahan" --id jiahan --kind private
 memory-pod ingest --pod jiahan ~/Documents/notes
 ```
 
-Create an explicit Expert Playbook that is safe to share:
+Create an explicit Shared Pod that is safe to share:
 
 ```bash
 memory-pod pod create \
@@ -116,6 +117,11 @@ make os-loop
 PYTHONPATH=src python -m memory_pod.os_loop --base-pod jiahan --shared-pod senior-review
 ```
 
+The default `make os-loop` target uses the frozen demo Pods from `make
+demo-setup` (`jiahan + senior-review`) so it works reliably during a live demo.
+Use `BASE_POD=... SHARED_POD=...` or the popup's **Confirm → Hotkey** button to
+switch to your onboarded Base Pod and any Shared Pod.
+
 Press the hotkey (`Option + Enter`) while your cursor is in the AI's text box.
 It does `Cmd+A / Cmd+X`, furnishes the text, and pastes the result back. It
 **never submits** — you review it and press Enter yourself. Use it on **one**
@@ -135,7 +141,7 @@ clipboard, and does not paste or submit anything.
 ## Demos
 
 ```bash
-make onboard       # First-run: create My Pod + starter Expert Pods
+make onboard       # First-run: create My Pod + starter Shared Pods
 make pod-demo      # Own -> Carry -> Dock -> selective retrieval
 make demo          # Same prompt, different private memories
 make demo-learn    # Local write-back

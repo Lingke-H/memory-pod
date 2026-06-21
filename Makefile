@@ -47,8 +47,8 @@ popup:
 # Tier 2 in-place injection into ONE AI site (pairs with `make demo-setup`).
 # Pastes the polished furnished prompt into the focused input box; never auto-submits.
 # Override pods with `make os-loop BASE_POD=jiahan SHARED_POD=senior-review`.
-BASE_POD ?= eddy
-SHARED_POD ?= lawyer
+BASE_POD ?= jiahan
+SHARED_POD ?= senior-review
 os-loop:
 	PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src $(PYTHON) -m memory_pod.os_loop --base-pod $(BASE_POD) --shared-pod $(SHARED_POD)
 
