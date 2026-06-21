@@ -7,13 +7,18 @@ store or retrieval internals. The popup shows the retrieved memories and their
 similarity scores so the personalization is visible during a demo, and a
 "Remember" button writes a new memory back locally for the "it just learned"
 moment.
+
+macOS note: Tk/NSWindow must live on the main thread, so the window is built
+once on the main thread and `root.mainloop()` runs there. The global hotkey
+listener runs on its own thread and only *marshals* a "show window" request back
+to the main thread via `root.after(...)`. Creating the window from the listener
+thread crashes with "NSWindow should only be instantiated on the main thread!".
 """
 
 from __future__ import annotations
 
 import logging
 import platform
-import threading
 import tkinter as tk
 from tkinter import ttk
 
@@ -33,27 +38,50 @@ class HotkeyPopup:
     ) -> None:
         self.hotkey = hotkey
         self.profile = profile
-        self._visible = threading.Event()
+        self.root: tk.Tk | None = None
+        self._prompt: tk.Text | None = None
 
     def start(self) -> None:
         self._warn_for_macos_permissions()
-        with keyboard.GlobalHotKeys({self.hotkey: self._show_popup}) as listener:
-            listener.join()
 
-    def _show_popup(self) -> None:
-        if self._visible.is_set():
-            return
-        self._visible.set()
-        threading.Thread(target=self._run_window, daemon=True).start()
+        # Build the window once, on the main thread, then hide it until summoned.
+        self.root = tk.Tk()
+        self._build_ui(self.root)
+        self.root.protocol("WM_DELETE_WINDOW", self._hide)
+        self.root.withdraw()
 
-    def _run_window(self) -> None:
-        root = tk.Tk()
+        listener = keyboard.GlobalHotKeys({self.hotkey: self._on_hotkey})
+        listener.start()
+        LOGGER.info("Listening for %s — press it to summon the popup.", self.hotkey)
+        try:
+            self.root.mainloop()
+        finally:
+            listener.stop()
+
+    def _on_hotkey(self) -> None:
+        # Runs on the listener thread: hand the work back to the Tk main thread.
+        if self.root is not None:
+            self.root.after(0, self._show)
+
+    def _show(self) -> None:
+        assert self.root is not None
+        self.root.deiconify()
+        self.root.lift()
+        self.root.attributes("-topmost", True)
+        if self._prompt is not None:
+            self._prompt.focus_force()
+
+    def _hide(self) -> None:
+        if self.root is not None:
+            self.root.withdraw()
+
+    def _build_ui(self, root: tk.Tk) -> None:
         root.title(f"Memory Pod ({self.profile})")
         root.geometry("720x560")
-        root.attributes("-topmost", True)
 
         prompt = tk.Text(root, height=6, wrap="word")
         prompt.pack(fill="x", padx=12, pady=(12, 6))
+        self._prompt = prompt
 
         ttk.Label(root, text="Furnished prompt").pack(anchor="w", padx=12)
         output = tk.Text(root, height=10, wrap="word")
@@ -107,19 +135,11 @@ class HotkeyPopup:
         ttk.Button(buttons, text="Furnish", command=furnish).pack(side="left")
         ttk.Button(buttons, text="Copy", command=copy_output).pack(side="left", padx=8)
         ttk.Button(buttons, text="Remember", command=remember_input).pack(side="left")
-        ttk.Button(buttons, text="Close", command=root.destroy).pack(side="right")
+        ttk.Button(buttons, text="Close", command=self._hide).pack(side="right")
 
         ttk.Label(root, textvariable=status, anchor="w").pack(
             fill="x", padx=12, pady=(0, 12)
         )
-
-        def on_close() -> None:
-            self._visible.clear()
-            root.destroy()
-
-        root.protocol("WM_DELETE_WINDOW", on_close)
-        root.mainloop()
-        self._visible.clear()
 
     @staticmethod
     def _warn_for_macos_permissions() -> None:
@@ -137,4 +157,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
