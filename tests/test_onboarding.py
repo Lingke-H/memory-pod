@@ -6,6 +6,7 @@ from memory_pod.onboarding import (
     complete_about_you,
     is_onboarded,
     mark_onboarded,
+    seed_experts,
 )
 from memory_pod.pods import get_pod_manifest
 
@@ -46,6 +47,30 @@ def test_complete_about_you_is_idempotent(tmp_path, monkeypatch):
 
     ids = [record.id for record in load_records(pod_id, tmp_path)]
     assert len(ids) == len(set(ids))  # stable ids -> no duplicates
+
+
+def test_seed_experts_creates_six_shared_pods(tmp_path):
+    seeded = seed_experts(pods_root=tmp_path, embedder=HashingEmbedder())
+
+    assert set(seeded) == {
+        "resume",
+        "cover-letter",
+        "coding",
+        "email",
+        "marketing",
+        "academic",
+    }
+    manifest = get_pod_manifest("resume", tmp_path)
+    assert manifest is not None and manifest.kind == "shared"
+    assert load_records("resume", tmp_path)  # playbook ingested as records
+
+
+def test_seed_experts_is_idempotent(tmp_path):
+    seed_experts(pods_root=tmp_path, embedder=HashingEmbedder())
+    seed_experts(pods_root=tmp_path, embedder=HashingEmbedder())  # must not crash
+
+    ids = [record.id for record in load_records("coding", tmp_path)]
+    assert len(ids) == len(set(ids))  # source reconciliation -> no duplicates
 
 
 def test_ollama_available_false_when_down():

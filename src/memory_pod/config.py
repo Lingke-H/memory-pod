@@ -10,6 +10,7 @@ REPO_ROOT = PACKAGE_DIR.parents[1]
 DATA_DIR = REPO_ROOT / "data"
 DEMO_PROFILES_DIR = DATA_DIR / "profiles"
 LEGACY_PROFILES_DIR = DEMO_PROFILES_DIR
+EXPERTS_DIR = DATA_DIR / "experts"
 
 DEFAULT_MEMORY_POD_HOME = Path.home() / "Library" / "Application Support" / "Memory Pod"
 MEMORY_POD_HOME = Path(

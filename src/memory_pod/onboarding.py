@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from memory_pod.config import MEMORY_POD_HOME, PODS_DIR
+from memory_pod.config import EXPERTS_DIR, MEMORY_POD_HOME, PODS_DIR
 from memory_pod.ingest import ingest_path
 from memory_pod.pods import _slugify, create_pod, get_pod_manifest
 from memory_pod.remember import remember
@@ -75,3 +75,32 @@ def complete_about_you(
         ingest_path(profile=pod_id, source_path=Path(notes_file), profiles_root=pods_root)
 
     return pod_id
+
+
+def seed_experts(
+    experts_dir: Path = EXPERTS_DIR,
+    pods_root: Path = PODS_DIR,
+    embedder=None,
+) -> list[str]:
+    """Import the bundled expert playbooks as read-to-dock Shared Pods.
+
+    Idempotent: existing expert Pods are re-ingested (source reconciliation keeps
+    them current) rather than recreated. Returns the seeded pod ids.
+    """
+    seeded: list[str] = []
+    for playbook in sorted(experts_dir.glob("*.md")):
+        pod_id = playbook.stem
+        name = pod_id.replace("-", " ").title()
+        if get_pod_manifest(pod_id, pods_root) is None:
+            create_pod(
+                name,
+                kind="shared",
+                author="Memory Pod (starter)",
+                purpose=f"Starter {name} playbook from common best-practices.",
+                pod_id=pod_id,
+                pods_root=pods_root,
+            )
+        kwargs = {"embedder": embedder} if embedder is not None else {}
+        ingest_path(profile=pod_id, source_path=playbook, profiles_root=pods_root, **kwargs)
+        seeded.append(pod_id)
+    return seeded
