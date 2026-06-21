@@ -68,6 +68,15 @@ Furnish one prompt:
 python -m memory_pod.cli augment --profile alice --debug "help me prepare for this interview"
 ```
 
+Run the frozen 3-minute judge demo (compare → "it just learned" → live popup cue):
+
+```bash
+make judge
+```
+
+See the [Demo runbook](docs/DEMO_RUNBOOK.md#3-minute-judge-script) for the spoken
+script, timing, and fallbacks.
+
 ## Checks
 
 ```bash
