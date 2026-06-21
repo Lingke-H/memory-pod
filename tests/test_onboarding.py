@@ -72,7 +72,7 @@ def test_seed_experts_creates_six_shared_pods(tmp_path):
     }
     manifest = get_pod_manifest("lawyer", tmp_path)
     assert manifest is not None and manifest.kind == "shared"
-    assert "shared playbook/task lens" in manifest.purpose
+    assert "Shared Pod carrying a task lens/playbook" in manifest.purpose
     assert load_records("lawyer", tmp_path)  # playbook ingested as records
 
 

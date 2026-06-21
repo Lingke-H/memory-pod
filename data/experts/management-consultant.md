@@ -1,4 +1,4 @@
-# Structured Problem-Solving Shared Playbook
+# Structured Problem-Solving Shared Pod
 
 General structured problem-solving practices used in strategy and operations work.
 

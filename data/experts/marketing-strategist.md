@@ -1,4 +1,4 @@
-# Go-To-Market Strategy Shared Playbook
+# Go-To-Market Strategy Shared Pod
 
 General go-to-market and brand-strategy best-practices.
 

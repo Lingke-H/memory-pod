@@ -39,7 +39,7 @@ from memory_pod.rewriter import RewriteResult, polish_locally
 LOGGER = logging.getLogger("memory_pod.hotkey_popup")
 NO_SHARED_POD = "(None)"
 
-# A stable little "face" per Pod so the Dock reads as people/playbooks, not ids.
+# A stable little "face" per Pod so the Dock reads as Pods, not ids.
 _POD_FACES = ("🧑‍💻", "⚙️", "📦", "⚖️", "📣", "🧠", "📚", "🎯", "🛠️", "🔬", "✍️", "🚀")
 
 
@@ -58,7 +58,7 @@ def format_value_summary(memories, stack: PodStack) -> str:
         shared_n = sum(1 for m in memories if m.pod_id == stack.shared_pod)
         return (
             f"💡 Built from {base_n} of your memories "
-            f"+ {shared_n} shared playbook item(s)."
+            f"+ {shared_n} shared context item(s)."
         )
     return f"💡 Built from {base_n} of your memories."
 
@@ -164,7 +164,7 @@ class HotkeyPopup:
         )
         ttk.Label(
             dialog,
-            text="Furnish your prompts with your memory + a shared playbook.\n"
+            text="Furnish your prompts with your memory + a Shared Pod.\n"
             "Everything stays on your computer.",
             justify="left",
         ).pack(anchor="w", padx=16)
@@ -172,8 +172,8 @@ class HotkeyPopup:
         ai = "found ✓" if ollama_available() else "not found (optional — install Ollama for AI polish)"
         ttk.Label(dialog, text=f"Local AI: {ai}").pack(anchor="w", padx=16, pady=(10, 0))
 
-        playbooks_var = tk.StringVar(value="Loading starter playbooks…")
-        ttk.Label(dialog, textvariable=playbooks_var).pack(anchor="w", padx=16, pady=(4, 8))
+        starter_pods_var = tk.StringVar(value="Loading starter Shared Pods…")
+        ttk.Label(dialog, textvariable=starter_pods_var).pack(anchor="w", padx=16, pady=(4, 8))
 
         ttk.Label(
             dialog, text="Tell me about you (optional — skip any):", font=("", 12, "bold")
@@ -203,17 +203,17 @@ class HotkeyPopup:
             )
         )
 
-        # Seed the starter playbooks in the background so the window opens instantly.
+        # Seed the starter Shared Pods in the background so the window opens instantly.
         def seed_worker() -> None:
             try:
                 ids = seed_experts(pods_root=self.pods_root)
-                msg = "Playbooks ready: " + ", ".join(
+                msg = "Shared Pods ready: " + ", ".join(
                     i.replace("-", " ").title() for i in ids
                 ) + " ✓"
             except Exception as exc:  # noqa: BLE001 - surface any seed failure in the UI
-                msg = f"Playbooks: could not load ({exc})"
+                msg = f"Shared Pods: could not load ({exc})"
             if self.root is not None:
-                self.root.after(0, lambda: playbooks_var.set(msg))
+                self.root.after(0, lambda: starter_pods_var.set(msg))
 
         threading.Thread(target=seed_worker, daemon=True).start()
 

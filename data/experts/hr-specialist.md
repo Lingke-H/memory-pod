@@ -1,4 +1,4 @@
-# People Operations Shared Playbook
+# People Operations Shared Pod
 
 General people-operations best-practices, not employment-law advice. Confirm
 legal questions with counsel for the relevant jurisdiction.

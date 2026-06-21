@@ -1,4 +1,4 @@
-# Accounting Checklist Shared Playbook
+# Accounting Checklist Shared Pod
 
 General accounting and bookkeeping best-practices, not tax or audit advice.
 Confirm treatment with a licensed CPA and the applicable standards and tax code.
