@@ -168,7 +168,9 @@ class HotkeyPopup:
         self._prompt = tk.Text(root, height=5, wrap="word")
         self._prompt.pack(fill="x", padx=12, pady=(2, 8))
 
-        ttk.Label(root, text="Furnished prompt").pack(anchor="w", padx=12)
+        ttk.Label(
+            root, text="Furnished prompt  (copy this whole block → paste into ChatGPT / Claude)"
+        ).pack(anchor="w", padx=12)
         self._output = tk.Text(root, height=11, wrap="word")
         self._output.pack(fill="both", expand=True, padx=12, pady=(2, 8))
 
@@ -250,9 +252,17 @@ class HotkeyPopup:
         self._set_output(result.furnished_prompt)
         self._render_memories(result.memories)
         self._set_value(result.memories, stack)
-        self._set_status(
-            f"Furnished with {len(result.memories)} selected context item(s)."
-        )
+        if result.memories:
+            self._set_status(
+                f"Furnished with {len(result.memories)} context item(s). "
+                "Click Copy, then paste into your AI."
+            )
+        else:
+            self._set_status(
+                "No context matched this prompt yet — Remember a fact or ingest a "
+                "file into this Base Pod, then Furnish again. (The prompt below is "
+                "still copy-ready.)"
+            )
 
     def _render_memories(self, memories) -> None:
         assert self._memory_rows is not None
