@@ -8,7 +8,7 @@ from pathlib import Path
 
 import numpy as np
 
-from memory_pod.embeddings import Embedder, get_embedder
+from memory_pod.embeddings import Embedder, get_embedder, lexical_keys
 from memory_pod.config import PROFILES_DIR
 from memory_pod.memory_store import MemoryRecord, load_records
 
@@ -20,6 +20,7 @@ DEFAULT_MIN_RELEVANCE_SCORE = 0.025
 class RetrievalResult:
     record: MemoryRecord
     score: float
+    pod_id: str | None = None
 
 
 def retrieve(
@@ -73,10 +74,20 @@ def retrieve(
     weighted_scores = np.full_like(scores, -np.inf)
     valid_weights = np.isfinite(weights)
     weighted_scores[valid_weights] = scores[valid_weights] * weights[valid_weights]
+    if local_embedder.identity.startswith("hashing-v1:"):
+        query_keys = lexical_keys(raw_prompt)
+        lexical_matches = np.array(
+            [bool(query_keys & lexical_keys(record.text)) for record in records]
+        )
+        weighted_scores[~lexical_matches] = -np.inf
     best_indexes = np.argsort(weighted_scores)[::-1][:top_k]
 
     return [
-        RetrievalResult(record=records[index], score=float(weighted_scores[index]))
+        RetrievalResult(
+            record=records[index],
+            score=float(weighted_scores[index]),
+            pod_id=profile,
+        )
         for index in best_indexes
         if np.isfinite(weighted_scores[index]) and float(weighted_scores[index]) >= min_score
     ]

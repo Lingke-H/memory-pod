@@ -1,50 +1,56 @@
-"""Tier 1 hotkey popup.
-
-This safe interaction layer summons Memory Pod's own small input window instead
-of hijacking another app's input box. It only calls the public contract
-(augment_for_profile and remember); it does not know anything about the memory
-store or retrieval internals. The popup shows the retrieved memories and their
-similarity scores so the personalization is visible during a demo, and a
-"Remember" button writes a new memory back locally for the "it just learned"
-moment.
-
-macOS note: Tk/NSWindow must live on the main thread, so the window is built
-once on the main thread and `root.mainloop()` runs there. The global hotkey
-listener runs on its own thread and only *marshals* a "show window" request back
-to the main thread via `root.after(...)`. Creating the window from the listener
-thread crashes with "NSWindow should only be instantiated on the main thread!".
-"""
+"""Tier 1 hotkey popup with a local Base + Shared Pod Dock."""
 
 from __future__ import annotations
 
 import logging
 import platform
 import tkinter as tk
-from tkinter import ttk
+from pathlib import Path
+from tkinter import filedialog, messagebox, ttk
 
 import pyperclip
 from pynput import keyboard
 
-from memory_pod.augment import augment_for_profile
-from memory_pod.config import DEFAULT_PROFILE
+from memory_pod.augment import augment_for_stack, furnish_selected
+from memory_pod.config import DEFAULT_PROFILE, PROFILES_DIR
+from memory_pod.pods import (
+    PodStack,
+    export_pod,
+    import_pod,
+    inspect_pod,
+    list_pods,
+)
 from memory_pod.remember import remember
 
 LOGGER = logging.getLogger("memory_pod.hotkey_popup")
+NO_SHARED_POD = "(None)"
 
 
 class HotkeyPopup:
     def __init__(
-        self, hotkey: str = "<alt>+<enter>", profile: str = DEFAULT_PROFILE
+        self,
+        hotkey: str = "<alt>+<enter>",
+        profile: str = DEFAULT_PROFILE,
+        pods_root: Path = PROFILES_DIR,
     ) -> None:
         self.hotkey = hotkey
         self.profile = profile
+        self.pods_root = pods_root
         self.root: tk.Tk | None = None
         self._prompt: tk.Text | None = None
+        self._output: tk.Text | None = None
+        self._memory_rows: ttk.Frame | None = None
+        self._base_selector: ttk.Combobox | None = None
+        self._shared_selector: ttk.Combobox | None = None
+        self._base_var: tk.StringVar | None = None
+        self._shared_var: tk.StringVar | None = None
+        self._status: tk.StringVar | None = None
+        self._memory_vars: list[tuple[tk.BooleanVar, object]] = []
+        self._last_raw = ""
+        self._last_stack: PodStack | None = None
 
     def start(self) -> None:
         self._warn_for_macos_permissions()
-
-        # Build the window once, on the main thread, then hide it until summoned.
         self.root = tk.Tk()
         self._build_ui(self.root)
         self.root.protocol("WM_DELETE_WINDOW", self._hide)
@@ -52,19 +58,19 @@ class HotkeyPopup:
 
         listener = keyboard.GlobalHotKeys({self.hotkey: self._on_hotkey})
         listener.start()
-        LOGGER.info("Listening for %s — press it to summon the popup.", self.hotkey)
+        LOGGER.info("Listening for %s — press it to summon the Pod Dock.", self.hotkey)
         try:
             self.root.mainloop()
         finally:
             listener.stop()
 
     def _on_hotkey(self) -> None:
-        # Runs on the listener thread: hand the work back to the Tk main thread.
         if self.root is not None:
             self.root.after(0, self._show)
 
     def _show(self) -> None:
         assert self.root is not None
+        self._refresh_pod_choices()
         self.root.deiconify()
         self.root.lift()
         self.root.attributes("-topmost", True)
@@ -76,76 +82,307 @@ class HotkeyPopup:
             self.root.withdraw()
 
     def _build_ui(self, root: tk.Tk) -> None:
-        root.title(f"Memory Pod ({self.profile})")
-        root.geometry("720x560")
+        root.title("Memory Pod — Pod Dock")
+        root.geometry("820x700")
+        root.minsize(720, 620)
 
-        prompt = tk.Text(root, height=6, wrap="word")
-        prompt.pack(fill="x", padx=12, pady=(12, 6))
-        self._prompt = prompt
+        dock = ttk.Frame(root)
+        dock.pack(fill="x", padx=12, pady=(12, 8))
+        ttk.Label(dock, text="Base Pod").grid(row=0, column=0, sticky="w")
+        self._base_var = tk.StringVar(value=self.profile)
+        base_selector = ttk.Combobox(
+            dock,
+            textvariable=self._base_var,
+            state="readonly",
+            width=24,
+        )
+        base_selector.grid(row=1, column=0, sticky="ew", padx=(0, 8))
+        base_selector.bind("<<ComboboxSelected>>", self._on_dock_change)
+        base_selector.configure(postcommand=self._refresh_pod_choices)
+        self._base_selector = base_selector
+
+        ttk.Label(dock, text="Shared Pod").grid(row=0, column=1, sticky="w")
+        self._shared_var = tk.StringVar(value=NO_SHARED_POD)
+        shared_selector = ttk.Combobox(
+            dock,
+            textvariable=self._shared_var,
+            state="readonly",
+            width=24,
+        )
+        shared_selector.grid(row=1, column=1, sticky="ew", padx=(0, 8))
+        shared_selector.bind("<<ComboboxSelected>>", self._on_dock_change)
+        shared_selector.configure(postcommand=self._refresh_pod_choices)
+        self._shared_selector = shared_selector
+
+        ttk.Button(dock, text="Import Pod", command=self._choose_import).grid(
+            row=1, column=2, padx=(0, 8)
+        )
+        ttk.Button(dock, text="Share Pod", command=self._share_pod).grid(row=1, column=3)
+        dock.columnconfigure(0, weight=1)
+        dock.columnconfigure(1, weight=1)
+
+        ttk.Label(root, text="Prompt").pack(anchor="w", padx=12)
+        self._prompt = tk.Text(root, height=5, wrap="word")
+        self._prompt.pack(fill="x", padx=12, pady=(2, 8))
 
         ttk.Label(root, text="Furnished prompt").pack(anchor="w", padx=12)
-        output = tk.Text(root, height=10, wrap="word")
-        output.pack(fill="both", expand=True, padx=12, pady=(0, 6))
+        self._output = tk.Text(root, height=11, wrap="word")
+        self._output.pack(fill="both", expand=True, padx=12, pady=(2, 8))
 
-        ttk.Label(root, text="Retrieved memories (similarity scores)").pack(anchor="w", padx=12)
-        memories = tk.Text(root, height=8, wrap="word")
-        memories.pack(fill="both", expand=True, padx=12, pady=(0, 6))
-
-        status = tk.StringVar(value=f"Profile: {self.profile}")
-
-        def furnish() -> None:
-            raw = prompt.get("1.0", "end").strip()
-            if not raw:
-                status.set("Type a prompt in the top box, then click Furnish.")
-                return
-            result = augment_for_profile(raw, profile=self.profile)
-
-            output.delete("1.0", "end")
-            output.insert("1.0", result.furnished_prompt)
-
-            memories.delete("1.0", "end")
-            if result.memories:
-                for index, item in enumerate(result.memories, start=1):
-                    snippet = " ".join(item.record.text.split())
-                    memories.insert("end", f"{index}. score={item.score:.3f}  {snippet}\n")
-                status.set(f"✓ Furnished — {len(result.memories)} memorie(s) retrieved. Click Copy to use it.")
-            else:
-                memories.insert("1.0", "(no memories retrieved)")
-                status.set("✓ Furnished — no matching memories retrieved.")
-
-        def copy_output() -> None:
-            text = output.get("1.0", "end").strip()
-            if not text:
-                status.set("Nothing to copy yet — click Furnish first.")
-                return
-            pyperclip.copy(text)
-            status.set("✓ Copied furnished prompt to clipboard.")
-
-        def remember_input() -> None:
-            text = prompt.get("1.0", "end").strip()
-            if not text:
-                status.set("Type a fact in the top box, then click Remember.")
-                return
-            record = remember(text, profile=self.profile, source="popup")
-            snippet = " ".join(record.text.split())
-            status.set(f"✓ Remembered for '{self.profile}': {snippet}")
+        ttk.Label(root, text="Context selected for sharing").pack(anchor="w", padx=12)
+        self._memory_rows = ttk.Frame(root)
+        self._memory_rows.pack(fill="x", padx=12, pady=(2, 8))
 
         buttons = ttk.Frame(root)
-        buttons.pack(fill="x", padx=12, pady=(6, 4))
-        ttk.Button(buttons, text="Furnish", command=furnish).pack(side="left")
-        ttk.Button(buttons, text="Copy", command=copy_output).pack(side="left", padx=8)
-        ttk.Button(buttons, text="Remember", command=remember_input).pack(side="left")
+        buttons.pack(fill="x", padx=12, pady=(2, 6))
+        ttk.Button(buttons, text="Furnish", command=self._furnish).pack(side="left")
+        ttk.Button(buttons, text="Copy", command=self._copy_output).pack(
+            side="left", padx=8
+        )
+        ttk.Button(buttons, text="Remember in Base", command=self._remember_input).pack(
+            side="left"
+        )
         ttk.Button(buttons, text="Close", command=self._hide).pack(side="right")
 
-        ttk.Label(root, textvariable=status, anchor="w").pack(
+        self._status = tk.StringVar()
+        ttk.Label(root, textvariable=self._status, anchor="w").pack(
             fill="x", padx=12, pady=(0, 12)
         )
+        self._refresh_pod_choices(base_selector, shared_selector)
+        self._set_dock_status()
+
+    def _refresh_pod_choices(self, base_selector=None, shared_selector=None) -> None:
+        pods = list_pods(self.pods_root)
+        writable = [pod.id for pod in pods if not pod.read_only]
+        assert self._base_var is not None and self._shared_var is not None
+        current_base = self._base_var.get() or self.profile
+        if current_base not in writable:
+            writable.insert(0, current_base)
+        shared = [pod.id for pod in pods if pod.kind == "shared"]
+
+        base_selector = base_selector or self._base_selector
+        shared_selector = shared_selector or self._shared_selector
+        if base_selector is not None:
+            base_selector.configure(values=writable)
+        if shared_selector is not None:
+            shared_selector.configure(values=[NO_SHARED_POD, *shared])
+
+        if self._base_var.get() not in writable:
+            self._base_var.set(writable[0])
+        if self._shared_var.get() not in [NO_SHARED_POD, *shared]:
+            self._shared_var.set(NO_SHARED_POD)
+
+    def _current_stack(self) -> PodStack:
+        assert self._base_var is not None and self._shared_var is not None
+        shared = self._shared_var.get()
+        return PodStack(
+            base_pod=self._base_var.get(),
+            shared_pod=None if shared == NO_SHARED_POD else shared,
+        )
+
+    def _on_dock_change(self, _event=None) -> None:
+        self._set_dock_status()
+
+    def _set_dock_status(self) -> None:
+        if self._status is None:
+            return
+        stack = self._current_stack()
+        label = stack.base_pod
+        if stack.shared_pod:
+            label += f" + {stack.shared_pod}"
+        self._status.set(f"Docked: {label}")
+
+    def _furnish(self) -> None:
+        assert self._prompt is not None and self._output is not None
+        raw = self._prompt.get("1.0", "end").strip()
+        if not raw:
+            self._set_status("Type a prompt, then click Furnish.")
+            return
+
+        stack = self._current_stack()
+        result = augment_for_stack(raw, stack, pods_root=self.pods_root)
+        self._last_raw = raw
+        self._last_stack = stack
+        self._set_output(result.furnished_prompt)
+        self._render_memories(result.memories)
+        self._set_status(
+            f"Furnished with {len(result.memories)} selected context item(s)."
+        )
+
+    def _render_memories(self, memories) -> None:
+        assert self._memory_rows is not None
+        for child in self._memory_rows.winfo_children():
+            child.destroy()
+        self._memory_vars = []
+        if not memories:
+            ttk.Label(self._memory_rows, text="No matching context retrieved.").pack(
+                anchor="w"
+            )
+            return
+
+        for result in memories:
+            selected = tk.BooleanVar(value=True)
+            snippet = " ".join(result.record.text.split())
+            if len(snippet) > 120:
+                snippet = snippet[:117] + "..."
+            label = f"[{result.pod_id}] {result.score:.3f}  {snippet}"
+            ttk.Checkbutton(
+                self._memory_rows,
+                text=label,
+                variable=selected,
+                command=self._rebuild_selected,
+            ).pack(anchor="w", fill="x")
+            self._memory_vars.append((selected, result))
+
+    def _rebuild_selected(self) -> None:
+        if self._last_stack is None:
+            return
+        selected = [result for variable, result in self._memory_vars if variable.get()]
+        furnished = furnish_selected(
+            self._last_raw,
+            selected,
+            self._last_stack,
+            pods_root=self.pods_root,
+        )
+        self._set_output(furnished)
+        self._set_status(f"Using {len(selected)} approved context item(s).")
+
+    def _copy_output(self) -> None:
+        assert self._output is not None
+        text = self._output.get("1.0", "end").strip()
+        if not text:
+            self._set_status("Nothing to copy yet — click Furnish first.")
+            return
+        pyperclip.copy(text)
+        self._set_status("Copied. Review it once more before sending to any AI.")
+
+    def _remember_input(self) -> None:
+        assert self._prompt is not None
+        text = self._prompt.get("1.0", "end").strip()
+        if not text:
+            self._set_status("Type a fact, then click Remember in Base.")
+            return
+        try:
+            record = remember(
+                text,
+                profile=self._current_stack().base_pod,
+                source="popup",
+                profiles_root=self.pods_root,
+            )
+        except (PermissionError, ValueError) as exc:
+            self._set_status(str(exc))
+            return
+        self._set_status(f"Remembered in Base: {' '.join(record.text.split())}")
+
+    def _choose_import(self) -> None:
+        path = filedialog.askopenfilename(
+            title="Preview a Memory Pod",
+            filetypes=[("Memory Pod", "*.mpod"), ("All files", "*")],
+        )
+        if not path:
+            return
+        try:
+            portable = inspect_pod(path)
+        except (OSError, UnicodeError, ValueError) as exc:
+            messagebox.showerror("Cannot open Pod", str(exc))
+            return
+        self._show_import_preview(portable)
+
+    def _show_import_preview(self, portable) -> None:
+        assert self.root is not None
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Import Pod — Preview")
+        dialog.geometry("680x480")
+        dialog.transient(self.root)
+        dialog.grab_set()
+
+        pod = portable.manifest
+        summary = (
+            f"{pod.name}\n"
+            f"Author: {pod.author or 'Unspecified (not verified)'}\n"
+            f"Purpose: {pod.purpose or 'Unspecified'}\n"
+            f"Version: {pod.version}\n"
+            f"Records: {len(portable.records)}\n"
+            "Imported Pods are read-only and re-embedded locally.\n\n"
+        )
+        preview = tk.Text(dialog, wrap="word")
+        preview.pack(fill="both", expand=True, padx=12, pady=12)
+        preview.insert("end", summary)
+        for index, record in enumerate(portable.records, start=1):
+            preview.insert("end", f"{index}. [{record['type']}] {record['text']}\n\n")
+        preview.configure(state="disabled")
+
+        buttons = ttk.Frame(dialog)
+        buttons.pack(fill="x", padx=12, pady=(0, 12))
+        ttk.Button(buttons, text="Cancel", command=dialog.destroy).pack(side="right")
+
+        def confirm_import() -> None:
+            try:
+                manifest = import_pod(portable.source_path, pods_root=self.pods_root)
+            except FileExistsError as exc:
+                if "local Pod" in str(exc):
+                    messagebox.showerror("Import blocked", str(exc))
+                    return
+                if not messagebox.askyesno("Replace imported Pod?", f"{exc}\n\nReplace it?"):
+                    return
+                try:
+                    manifest = import_pod(
+                        portable.source_path,
+                        replace=True,
+                        pods_root=self.pods_root,
+                    )
+                except (FileExistsError, OSError, ValueError) as replace_exc:
+                    messagebox.showerror("Import failed", str(replace_exc))
+                    return
+            except (OSError, ValueError) as exc:
+                messagebox.showerror("Import failed", str(exc))
+                return
+            assert self._shared_var is not None
+            self._refresh_pod_choices()
+            self._shared_var.set(manifest.id)
+            self._set_dock_status()
+            self._set_status(f"Imported and docked read-only Pod: {manifest.name}")
+            dialog.destroy()
+
+        ttk.Button(buttons, text="Import and Dock", command=confirm_import).pack(
+            side="right", padx=(0, 8)
+        )
+
+    def _share_pod(self) -> None:
+        assert self._shared_var is not None
+        pod_id = self._shared_var.get()
+        if pod_id == NO_SHARED_POD:
+            self._set_status("Dock a locally created Shared Pod before sharing it.")
+            return
+        path = filedialog.asksaveasfilename(
+            title="Share a Memory Pod",
+            defaultextension=".mpod",
+            filetypes=[("Memory Pod", "*.mpod")],
+            initialfile=f"{pod_id}.mpod",
+        )
+        if not path:
+            return
+        try:
+            exported = export_pod(pod_id, path, self.pods_root)
+        except (FileNotFoundError, PermissionError, ValueError) as exc:
+            self._set_status(str(exc))
+            return
+        self._set_status(f"Exported inspectable Pod: {exported}")
+
+    def _set_output(self, text: str) -> None:
+        assert self._output is not None
+        self._output.delete("1.0", "end")
+        self._output.insert("1.0", text)
+
+    def _set_status(self, text: str) -> None:
+        if self._status is not None:
+            self._status.set(text)
 
     @staticmethod
     def _warn_for_macos_permissions() -> None:
         if platform.system() == "Darwin":
             LOGGER.info(
-                "macOS may require Accessibility permission for global hotkeys. "
+                "macOS requires Accessibility permission for global hotkeys. "
                 "Enable it for the terminal or Python app if the hotkey is ignored."
             )
 

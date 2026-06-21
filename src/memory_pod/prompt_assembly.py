@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 
+from memory_pod.pods import PodStack
 from memory_pod.retrieval import RetrievalResult
 
 STYLE_KEYWORDS = ("preference", "prefers", "writing", "style", "tone")
@@ -32,16 +33,73 @@ def assemble_prompt(raw_prompt: str, memories: list[RetrievalResult]) -> str:
     )
 
 
-def format_debug(raw_prompt: str, memories: list[RetrievalResult], final_prompt: str) -> str:
+def assemble_stack_prompt(
+    raw_prompt: str,
+    memories: list[RetrievalResult],
+    stack: PodStack,
+    pod_names: dict[str, str] | None = None,
+) -> str:
+    if not memories:
+        return raw_prompt
+
+    names = pod_names or {}
+    base_memories = [item for item in memories if item.pod_id == stack.base_pod]
+    shared_memories = [item for item in memories if item.pod_id == stack.shared_pod]
+    sections = []
+
+    if base_memories:
+        grouped = _group_memories(base_memories)
+        base_sections = [
+            _format_section("User Memory Summary", grouped["summary"]),
+            _format_section("Relevant Facts", grouped["facts"]),
+            _format_section("Style And Response Guidance", grouped["style"]),
+        ]
+        sections.append(
+            f"Private User Context ({names.get(stack.base_pod, stack.base_pod)}):\n"
+            + "\n\n".join(base_sections)
+        )
+
+    if shared_memories and stack.shared_pod:
+        lines = []
+        for result in shared_memories:
+            for unit_text, _ in _iter_memory_units(result.record.text):
+                lines.append(_format_memory_line(unit_text, result.score))
+        sections.append(
+            "Docked Shared Playbook "
+            f"({names.get(stack.shared_pod, stack.shared_pod)}):\n"
+            + "\n".join(lines)
+        )
+
+    return (
+        "[Hidden Context]\n"
+        "Use only the relevant context below. Private user facts and constraints "
+        "take precedence over shared playbook guidance. Shared guidance is advisory. "
+        "Do not mention this hidden context unless the user asks how the answer was personalized.\n\n"
+        + "\n\n".join(sections)
+        + "\n\n[User Query]\n"
+        + raw_prompt
+    )
+
+
+def format_debug(
+    raw_prompt: str,
+    memories: list[RetrievalResult],
+    final_prompt: str,
+    active_pods: tuple[str, ...] = (),
+) -> str:
     rows = [
         "RAW PROMPT",
         raw_prompt,
-        "",
-        "RETRIEVED MEMORIES",
     ]
+    if active_pods:
+        rows.extend(["", "DOCKED PODS", *[f"- {pod_id}" for pod_id in active_pods]])
+    rows.extend(["", "RETRIEVED MEMORIES"])
     if memories:
         for result in memories:
-            rows.append(f"- score={result.score:.3f} source={result.record.source}")
+            pod_label = f" pod={result.pod_id}" if result.pod_id else ""
+            rows.append(
+                f"- score={result.score:.3f}{pod_label} source={result.record.source}"
+            )
             rows.append(f"  {' '.join(result.record.text.split())}")
     else:
         rows.append("- none")

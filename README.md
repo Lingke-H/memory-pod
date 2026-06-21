@@ -1,101 +1,107 @@
 # Memory Pod
 
-Memory Pod is a local-first personal memory engine for hackathon prototyping. It
-ingests local `memory.md` / `.txt` files, retrieves relevant context, and
-furnishes vague AI prompts with private user-owned memory.
+Memory Pod is a local-first, inspectable context layer that works across AI
+models. Create private and shareable Pods, Dock the context needed for a task,
+approve the retrieved snippets, and copy the furnished prompt into any AI.
 
-Read [PROJECT_DESCRIPTION_V3.md](PROJECT_DESCRIPTION_V3.md) before coding. It is
-the source of truth for scope, tier boundaries, and demo priorities.
+Read [PROJECT_DESCRIPTION_V4.md](PROJECT_DESCRIPTION_V4.md) before coding.
 
-## Scope
+> **Own your Pod. Dock it anywhere. Share only what you choose.**
 
-- Tier 0: local file ingestion, local embedding, retrieval, and `augment()`.
-- Tier 1: safe hotkey popup that calls `augment()`.
-- Tier 2: true clipboard injection only as a stretch.
-- Tier 3: Terminal Radar is intentionally cut by default.
-
-## Local Setup
+## Setup
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
-pip install -e .
-```
-
-Or use:
-
-```bash
 make setup
 ```
 
-## Collaboration
+User Pods live under:
 
-- [Collaboration guide](docs/COLLABORATION.md)
-- [Task board](docs/TASK_BOARD.md)
-- [Demo runbook](docs/DEMO_RUNBOOK.md)
-- [Handoff template](docs/HANDOFF_TEMPLATE.md)
-
-The repo is split across two lanes:
-
-- Engine: everything behind `augment()`.
-- Interaction: everything that calls `augment()`.
-
-## Demo Commands
-
-Ingest the checked-in demo memory files:
-
-```bash
-python -m memory_pod.cli ingest --profile alice ./data/profiles/alice/memory.md
-python -m memory_pod.cli ingest --profile bob ./data/profiles/bob/memory.md
+```text
+~/Library/Application Support/Memory Pod/pods/
 ```
 
-Run the main "same prompt, different memory" demo:
+Set `MEMORY_POD_HOME` to override that location. Existing repo profile stores
+can be copied non-destructively with:
 
 ```bash
-python -m memory_pod.cli compare --debug "help me write this application"
+memory-pod pod migrate-legacy
 ```
 
-Or:
+## Create Pods
+
+Create a private Base Pod and ingest local notes:
 
 ```bash
-make demo
+memory-pod pod create --name "Jiahan" --id jiahan --kind private
+memory-pod ingest --pod jiahan ~/Documents/notes
 ```
 
-Furnish one prompt:
+Create an explicit Expert Playbook that is safe to share:
 
 ```bash
-python -m memory_pod.cli augment --profile alice --debug "help me prepare for this interview"
+memory-pod pod create \
+  --name "Senior Architecture Review" \
+  --id senior-review \
+  --kind shared \
+  --author "Alice" \
+  --purpose "Architecture and PR review"
+
+memory-pod ingest --pod senior-review ./architecture-playbook.md
+memory-pod pod export senior-review --output Senior-Review.mpod
 ```
 
-Run the frozen 3-minute judge demo (compare → "it just learned" → live popup cue):
+Preview and import a received Pod:
 
 ```bash
-make judge
+memory-pod pod inspect Senior-Review.mpod
+memory-pod pod import Senior-Review.mpod
+memory-pod pod list
 ```
 
-See the [Demo runbook](docs/DEMO_RUNBOOK.md#3-minute-judge-script) for the spoken
-script, timing, and fallbacks.
+## Dock Context
+
+```bash
+memory-pod augment \
+  --base-pod jiahan \
+  --shared-pod senior-review \
+  --debug \
+  "Review this API design"
+```
+
+The legacy `--profile` and `augment(raw_prompt)` interfaces remain supported.
+
+Launch the macOS Pod Dock:
+
+```bash
+make popup
+```
+
+Press `Option + Enter`, select a Base and optional Shared Pod, review or
+deselect retrieved context, then copy the furnished prompt. The popup never
+auto-submits.
+
+## Demos
+
+```bash
+make pod-demo      # Own -> Carry -> Dock -> selective retrieval
+make demo          # Same prompt, different private memories
+make demo-learn    # Local write-back
+make judge         # Frozen presentation path
+```
+
+See [docs/DEMO_RUNBOOK.md](docs/DEMO_RUNBOOK.md).
 
 ## Checks
-
-```bash
-python -m compileall src tests scripts
-pytest
-```
-
-Or:
 
 ```bash
 make check
 ```
 
-## macOS Note
-
-Tier 1 and Tier 2 use global hotkeys and simulated keypresses. macOS may require
-Accessibility permission for the terminal or Python app running the daemon.
-
 ## Privacy Boundary
 
-Memory Pod never reads third-party cloud memory or login sessions. Memory comes
-only from local files the user points at and optional local write-back.
+The Pod store, embeddings, and retrieval stay local. Portable `.mpod` files do
+not contain embeddings or absolute source paths. When you copy and send a
+furnished prompt to ChatGPT, Claude, or another provider, the context snippets
+you approved become part of that prompt and therefore leave your machine.

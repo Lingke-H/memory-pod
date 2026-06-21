@@ -2,16 +2,19 @@
 
 from __future__ import annotations
 
-from memory_pod.config import PROFILES_DIR
+from memory_pod.config import DEMO_PROFILES_DIR, PROFILES_DIR
 from memory_pod.ingest import ingest_path
 
 
 def main() -> None:
     for profile in ("alice", "bob"):
-        result = ingest_path(profile, PROFILES_DIR / profile / "memory.md")
+        result = ingest_path(
+            profile,
+            DEMO_PROFILES_DIR / profile / "memory.md",
+            profiles_root=PROFILES_DIR,
+        )
         print(f"{profile}: {result.records_written} chunks -> {result.store_path}")
 
 
 if __name__ == "__main__":
     main()
-

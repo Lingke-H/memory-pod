@@ -240,6 +240,35 @@ def test_retrieval_corrupt_store_fails_closed(tmp_path):
     assert results == []
 
 
+def test_hashing_fallback_rejects_pure_bucket_collision(tmp_path):
+    profiles_root = tmp_path / "profiles"
+    embedder = HashingEmbedder()
+    text = "For database migrations, define rollback behavior before production changes."
+    vector = embedder.embed([text])[0]
+    write_records(
+        "review",
+        [
+            MemoryRecord(
+                id="migration",
+                text=text,
+                embedder=embedder.identity,
+                embedding=vector.astype(float).tolist(),
+            )
+        ],
+        profiles_root=profiles_root,
+    )
+
+    results = retrieve(
+        "Plan a marathon breakfast.",
+        profile="review",
+        profiles_root=profiles_root,
+        embedder=embedder,
+        min_score=0.0,
+    )
+
+    assert results == []
+
+
 def _record(record_id: str, text: str, embedding: list[float]) -> MemoryRecord:
     return MemoryRecord(
         id=record_id,

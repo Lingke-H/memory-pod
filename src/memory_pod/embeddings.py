@@ -112,3 +112,13 @@ def _normalize_token(token: str) -> str:
     if len(token) > 3 and token.endswith("s"):
         return token[:-1]
     return token
+
+
+def lexical_keys(text: str) -> set[str]:
+    """Return coarse lexical keys used to guard hashing-vector collisions."""
+
+    return {
+        normalized[:4]
+        for token in TOKEN_RE.findall(text.lower())
+        if (normalized := _normalize_token(token))
+    }
