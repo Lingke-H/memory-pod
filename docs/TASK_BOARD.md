@@ -1,93 +1,43 @@
-# Task Board
+# Project Status Snapshot
 
-This is the hackathon execution board. Keep it short and honest.
+This document records the verified repository state; it is not a speculative
+feature backlog. Current scope is governed by
+[PROJECT_DESCRIPTION_V4.md](../PROJECT_DESCRIPTION_V4.md).
 
-## Now
+## Implemented
 
-### Engine: Local Write-Back
+- Local Markdown and text ingestion into JSONL-backed Pod stores.
+- Local sentence-transformer embeddings with a deterministic hashing fallback.
+- Embedder-mismatch protection and relevance-aware retrieval.
+- Private writable Base Pods and explicit Shared Pods.
+- Inspectable `.mpod` export, preview, import, and local re-embedding.
+- Read-only boundaries for imported Shared Pods.
+- Base-plus-Shared Pod Docking with separately framed prompt context.
+- Selective context review and deselection before copying.
+- Explicit local `remember()` write-back into private Base Pods.
+- CLI workflows for ingest, augment, compare, remember, and Pod management.
+- First-run onboarding and persistent demo seeding.
+- A review-first macOS Pod Dock that never auto-submits.
+- Optional local Ollama polishing with a safe furnished-prompt fallback.
+- Optional OS-level in-place injection and explicit write-back hotkeys.
+- Automated coverage for storage, retrieval, Pod policy, prompt assembly, CLI,
+  onboarding, popup helpers, OS-loop helpers, and demo setup.
 
-Owner: Engine lane
+## Operational Follow-Up
 
-Files:
+- Record and retain a known-good macOS hotkey demo fallback.
+- Perform a clean-machine setup rehearsal before a public demonstration.
+- Treat broader Pod stacks, cloud synchronization, marketplaces, browser
+  extensions, and autonomous agents as out of scope unless the product
+  constitution is deliberately revised.
 
-- `src/memory_pod/memory_store.py`
-- `src/memory_pod/augment.py` or new `src/memory_pod/remember.py`
-- `tests/`
-
-Acceptance:
-
-- Add `remember(text, profile)` with no cloud calls.
-- Store records in the same local JSONL profile store.
-- Add CLI-ready function surface, but CLI wiring can be a separate interaction
-  task.
-- `make check` passes.
-
-Suggested branch:
-
-```bash
-feat/engine-remember-writeback
-```
-
-### Interaction: Popup Debug View
-
-Owner: Interaction lane
-
-Files:
-
-- `src/memory_pod/hotkey_popup.py`
-- maybe `src/memory_pod/cli.py`
-
-Acceptance:
-
-- Popup uses `augment_for_profile(...)`, not raw `augment(...)`, where debug data
-  is needed.
-- Popup shows final furnished prompt plus retrieved memories and scores.
-- Copy still works.
-- No vector store internals are imported.
-- `make check` passes.
-
-Suggested branch:
+## Verification
 
 ```bash
-feat/interaction-popup-debug
+source .venv/bin/activate
+make check
+make pod-demo
 ```
 
-## Next
-
-### Interaction: CLI `remember`
-
-Owner: Interaction lane after Engine lands `remember()`
-
-Acceptance:
-
-- `python -m memory_pod.cli remember --profile alice "..."` writes local memory.
-- `augment --debug` can retrieve the newly remembered text.
-
-### Engine: Smarter Prompt Assembly
-
-Owner: Engine lane
-
-Acceptance:
-
-- Keep `augment(raw_prompt: str) -> str` unchanged.
-- Add rule-based local structure for task intent and memory categories.
-- No external LLM or cloud call.
-
-### Interaction: Demo Recording
-
-Owner: Interaction lane
-
-Acceptance:
-
-- Record Tier 0 compare demo.
-- Record Tier 1 popup demo.
-- Record Tier 2 dry-run only if stable.
-
-## Done
-
-- Tier 0 local file ingest -> embed -> retrieve -> augment.
-- Same prompt / different user compare demo.
-- Embedder mismatch protection.
-- `compare --reingest`.
-- Tier 2 default dry-run.
-
+Manual macOS hotkey behavior still requires Accessibility permission and a
+foreground interaction check; it cannot be established by unit tests alone.

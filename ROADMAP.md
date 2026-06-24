@@ -1,11 +1,9 @@
-# Memory Pod — Optimization, Features & 2-Person Delegation Plan
+# Memory Pod — Historical Optimization and Delegation Roadmap
 
-> Post–Tier 0 plan for the remaining hackathon time. Goal: **maximize demo
-> wow-factor** without breaking the constitution's red lines (local-first only,
-> no cloud memory) or the `augment()` contract. See
-> [PROJECT_DESCRIPTION_V3.md](PROJECT_DESCRIPTION_V3.md) for the source of truth.
-> For day-to-day work, use [docs/COLLABORATION.md](docs/COLLABORATION.md) and
-> [docs/TASK_BOARD.md](docs/TASK_BOARD.md).
+> **Status:** Historical hackathon planning document. Several items below have
+> already been implemented, and individual status notes may not reflect the final
+> repository state. Use [PROJECT_DESCRIPTION_V4.md](PROJECT_DESCRIPTION_V4.md)
+> for current product scope and [README.md](README.md) for verified setup and usage.
 
 ## Context
 

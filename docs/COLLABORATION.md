@@ -1,84 +1,42 @@
 # Collaboration Guide
 
-This repo follows `PROJECT_DESCRIPTION_V3.md`. If anything here conflicts with
-that constitution, the constitution wins.
+Memory Pod follows [PROJECT_DESCRIPTION_V4.md](../PROJECT_DESCRIPTION_V4.md).
+If another document conflicts with that product constitution, v4 wins.
 
-## Working Rule
+## Working Boundary
 
-Two people should work on opposite sides of the `augment()` contract:
-
-- **Engine owner:** everything behind `augment()`.
-- **Interaction owner:** everything that calls `augment()`.
-
-Do not casually edit files owned by the other lane. If a change must cross the
-boundary, agree on the public function signature first, then make the smallest
-cross-lane edit possible.
-
-## Lane A — Engine
-
-Primary files:
-
-- `src/memory_pod/augment.py`
-- `src/memory_pod/prompt_assembly.py`
-- `src/memory_pod/retrieval.py`
-- `src/memory_pod/embeddings.py`
-- `src/memory_pod/memory_store.py`
-- `src/memory_pod/ingest.py`
-- `tests/test_augment.py`
-- `tests/test_retrieval.py`
-
-Start here:
-
-```bash
-git checkout main
-git pull --ff-only
-git checkout -b feat/engine-remember-writeback
-```
-
-First task: implement local-only `remember(text, profile)` write-back and tests.
-
-## Lane B — Interaction And Demo
-
-Primary files:
-
-- `src/memory_pod/hotkey_popup.py`
-- `src/memory_pod/os_loop.py`
-- `src/memory_pod/cli.py`
-- `scripts/`
-- `README.md`
-- `docs/DEMO_RUNBOOK.md`
-
-Start here:
-
-```bash
-git checkout main
-git pull --ff-only
-git checkout -b feat/interaction-popup-debug
-```
-
-First task: show retrieved memories and similarity scores in the Tier 1 popup.
+- **Engine:** storage, ingest, embeddings, retrieval, prompt assembly, and the
+  public `augment()` / `remember()` contracts.
+- **Interaction:** CLI, Pod Dock, OS hotkeys, onboarding, and demo scripts that
+  consume the public engine contracts.
+- Agree on public signatures before making a change that crosses this boundary.
+- Keep Shared Pod guidance advisory and keep personal write-back limited to a
+  private writable Base Pod.
 
 ## Shared Files
 
-Avoid editing these at the same time:
+Coordinate edits to `README.md`, `ROADMAP.md`, `pyproject.toml`,
+`requirements.txt`, and the public interfaces in `src/memory_pod/augment.py`.
 
-- `ROADMAP.md`
-- `README.md`
-- `pyproject.toml`
-- `requirements.txt`
+## Branch and Commit Practice
 
-If a shared file needs an update, make it in a small standalone commit.
+Use focused branches and commits. The conventional Codex branch prefix is
+`codex/`; human contributors may follow the repository's existing naming
+convention. Do not commit generated Pod stores, model caches, `.env`, or build
+artifacts.
 
-## Before Every Commit
-
-Run:
+## Verification Before Handoff
 
 ```bash
+source .venv/bin/activate
 make check
-make demo
-make clean
+make pod-demo
+git status --short
 ```
 
-Generated `memories.jsonl` files must not be committed. Demo seed files
-`data/profiles/*/memory.md` are allowed in git.
+Run macOS hotkey checks manually when interaction code changes. Never treat a
+manual prompt injection as successful unless the prompt remains unsubmitted for
+user review.
 
+Use [HANDOFF_TEMPLATE.md](HANDOFF_TEMPLATE.md) to record the branch, scope,
+contract changes, verification evidence, and remaining risks.
