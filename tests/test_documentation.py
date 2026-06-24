@@ -50,3 +50,33 @@ def test_readme_local_markdown_links_exist():
             continue
         path_text = target.split("#", 1)[0]
         assert (ROOT / path_text).exists(), target
+
+
+def test_readme_opening_has_hackathon_context_and_chinese_shortcut():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    opening = readme[: readme.index("## Overview")]
+
+    assert "[中文版本](#中文文档)" in opening
+    assert "2026 AI Hackathon at UC Berkeley" in opening
+
+
+def test_readme_uses_progressive_plain_language_structure():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert "### The problem" in readme
+    assert "### What Memory Pod does" in readme
+    assert "### The experience in three steps" in readme
+    assert "## Key Concepts" in readme
+    assert "## Core Capabilities" not in readme
+
+
+def test_chinese_section_has_reciprocal_navigation_and_context():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    chinese = readme[readme.index("## 中文文档") :]
+
+    assert "[Back to English](#memory-pod)" in chinese
+    assert "2026 AI Hackathon at UC Berkeley" in chinese
+    assert "#### 现有问题" in chinese
+    assert "#### Memory Pod 的解决方式" in chinese
+    assert "#### 三步使用流程" in chinese
+    assert "### 核心概念" in chinese
