@@ -1,6 +1,6 @@
 .PHONY: setup check test compile seed demo demo-reingest demo-learn pod-demo demo-setup seed-experts onboard judge popup os-loop clean
 
-PYTHON ?= python
+PYTHON ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,python)
 
 setup:
 	$(PYTHON) -m pip install -r requirements.txt
