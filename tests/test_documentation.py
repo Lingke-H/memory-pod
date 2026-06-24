@@ -80,3 +80,27 @@ def test_chinese_section_has_reciprocal_navigation_and_context():
     assert "#### Memory Pod 的解决方式" in chinese
     assert "#### 三步使用流程" in chinese
     assert "### 核心概念" in chinese
+
+
+def test_chinese_readme_uses_natural_product_language():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    chinese = readme[readme.index("## 中文文档") :]
+
+    for awkward_phrase in (
+        "显式写回",
+        "输入框原位注入",
+        "本地表示",
+        "容错润色",
+        "活动 Pod 选择",
+        "该路径使用复制而非剪切",
+    ):
+        assert awkward_phrase not in chinese
+
+    for natural_phrase in (
+        "主动保存为记忆",
+        "直接回填当前输入框",
+        "向量表示",
+        "带降级机制的本地润色",
+        "当前选中的 Pod",
+    ):
+        assert natural_phrase in chinese
